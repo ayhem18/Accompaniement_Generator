@@ -14,7 +14,7 @@ public class VladimirZelenokor {
 
         Pattern loadedFile = new Pattern("V0");
         try {
-            File filePath = new File("src/barbiegirl.mid");
+            File filePath = new File("src/barbie_girl.mid");
             loadedFile = MidiFileManager.loadPatternFromMidi(filePath);
         } catch (InvalidMidiDataException e) {
             e.printStackTrace();

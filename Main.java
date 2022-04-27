@@ -1,8 +1,9 @@
 import org.jfugue.midi.MidiFileManager;
+import org.jfugue.midi.MidiParser;
 import org.jfugue.pattern.Pattern;
 import org.jfugue.player.Player;
-
 import javax.sound.midi.InvalidMidiDataException;
+import javax.sound.midi.MidiSystem;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
@@ -12,19 +13,26 @@ import java.util.stream.Stream;
 
 public class Main {
     static List<String> CMajor = Arrays.asList("C4q","D4q","E4q", "F4q", "G4q","A4q","B4q","C5q");
-    public static void main(String[] args) {
-        test3();
+    public static void main(String[] args) throws InvalidMidiDataException, IOException {
+        testKeyParser();
+    }
+    public static void testKeyParser() throws InvalidMidiDataException, IOException {
+        MidiParser parser = new MidiParser(); // Remember, you can use any Parser!
+        KeyParser listener = new KeyParser();
+        parser.addParserListener(listener);
+        parser.parse(MidiSystem.getSequence(new File("src/barbie_girl.mid")));
+        System.out.println(listener.getKey().getNotes());
     }
 
     public static void test3() {
         Pattern loadedFile = new Pattern();
         try {
-            File filePath = new File("src/barbiegirl.mid");
+            File filePath = new File("src/barbie_girl.mid");
             loadedFile = MidiFileManager.loadPatternFromMidi(filePath);
         } catch (InvalidMidiDataException | IOException e) {
             e.printStackTrace();
         }
-        System.out.println(loadedFile);
+        System.out.println(loadedFile.toString().split(" ").length - 2);
     }
     public static void test2() {
         Player player = new Player();
@@ -58,5 +66,13 @@ public class Main {
 
         player.play(music2.toString());
     }
-
+    public static void test4() throws InvalidMidiDataException, IOException {
+        MidiParser parser = new MidiParser(); // Remember, you can use any Parser!
+        KeyParserDemo listener = new KeyParserDemo();
+        parser.addParserListener(listener);
+        parser.parse(MidiSystem.getSequence(new File("src/barbie_girl.mid")));
+        listener.displayNotes();
+        System.out.println(listener.counter);
+    }
 }
+
