@@ -44,7 +44,7 @@ class KeyParser extends ParserListenerAdapter {
         }
     }
 
-    private final List<Note> notes;
+    final List<Note> notes;
 
     public KeyParser() {
         notes = new ArrayList<>();
@@ -52,12 +52,11 @@ class KeyParser extends ParserListenerAdapter {
 
     @Override
     public void onNoteParsed(Note note) {
-        notes.add(new Note(note.getPositionInOctave() % Note.OCTAVE));
+        notes.add(new Note(C_INTEGER + note.getPositionInOctave()));
     }
 
     public Intervals getKey() {
-//                .sorted((note1, note2) -> Integer.compare(note1.getPositionInOctave(), note2.getPositionInOctave()))
-//                .
+
         int bestFit = 0;
         // taking into consideration that a minimum of 2 scales will have the maximum fit indicator
         // (one major indicator and its equivalent in the minor scale)
@@ -119,14 +118,16 @@ class KeyParser extends ParserListenerAdapter {
         return bestScale;
     }
     private int findFitCounter(Intervals scale) {
-        List<Note> notesDistinct = notes.stream().distinct().toList();
-        int fitCounter = 0;
-        for (Note note : notesDistinct) {
-            if (scale.getNotes().contains(note)) {
-                fitCounter ++;
-            }
-        }
-        return fitCounter;
+        List<Note> notesDistinct = notes.stream()
+                        .map(Note::getPositionInOctave).distinct()
+                .map(position -> new Note(C_INTEGER + position)).toList();
+
+        List<Note> scaleNotes = new ArrayList<>(scale.getNotes().stream()
+                .map(Note::getPositionInOctave)
+                .map(position -> new Note(C_INTEGER + position)).toList());
+
+        scaleNotes.retainAll(notesDistinct);
+        return scaleNotes.size();
     }
 
     private int findNoteFrequency(Note note) {
