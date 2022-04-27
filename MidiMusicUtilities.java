@@ -5,30 +5,6 @@ import org.jfugue.theory.Note;
 import java.util.ArrayList;
 import java.util.List;
 
-class KeyParserDemo extends ParserListenerAdapter {
-    private final List<String> notes;
-    private final List<Note> n;
-    int counter;
-    public KeyParserDemo() {
-        notes = new ArrayList<>();
-        n = new ArrayList<>();
-        counter = 0;
-    }
-
-    @Override
-    public void onNoteParsed(Note note) {
-        notes.add(note.getToneString());
-        n.add(note);
-    }
-
-    public void displayNotes() {
-        System.out.println(notes);
-        System.out.println(notes.size());
-        System.out.println("####################");
-        System.out.println(n.size());
-    }
-}
-
 class KeyParser extends ParserListenerAdapter {
     static final Intervals MINOR_INTERVAL = new Intervals("1 2 b3 4 5 b6 b7");
     static final Intervals MAJOR_INTERVAL = new Intervals("1 2 3 4 5 6 7");
@@ -140,4 +116,24 @@ class KeyParser extends ParserListenerAdapter {
         return counter;
     }
 
+}
+
+class MeasuresParser extends ParserListenerAdapter {
+    static final byte DENOMINATOR_LIMIT = 6;
+    byte numerator;
+    byte denominator;
+
+    @Override
+    public void onTimeSignatureParsed (byte numerator, byte denominator) {
+        this.numerator = numerator;
+        this.denominator = denominator;
+    }
+
+    public void getTheTimeSignature () {
+        for (byte d = 1; d <= DENOMINATOR_LIMIT; d++) {
+            for (byte n = 1; n <= Math.pow(2, d); n++) {
+                onTimeSignatureParsed(d, n);
+            }
+        }
+    }
 }

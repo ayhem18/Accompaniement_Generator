@@ -1,10 +1,8 @@
 import org.jfugue.midi.MidiFileManager;
-import org.jfugue.midi.MidiParser;
 import org.jfugue.pattern.Pattern;
 import org.jfugue.player.Player;
 
 import javax.sound.midi.InvalidMidiDataException;
-import javax.sound.midi.MidiSystem;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
@@ -46,14 +44,6 @@ public class Temp {
         music2.delete(music2.length() - 1, music2.length());
 
         player.play(music2.toString());
-    }
-    public static void test4() throws InvalidMidiDataException, IOException {
-        MidiParser parser = new MidiParser(); // Remember, you can use any Parser!
-        KeyParserDemo listener = new KeyParserDemo();
-        parser.addParserListener(listener);
-        parser.parse(MidiSystem.getSequence(new File("src/barbie_girl.mid")));
-        listener.displayNotes();
-        System.out.println(listener.counter);
     }
 
     public static void test3() {
