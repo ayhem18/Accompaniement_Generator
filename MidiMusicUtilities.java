@@ -5,7 +5,7 @@ import org.jfugue.theory.Note;
 import java.util.ArrayList;
 import java.util.List;
 
-class KeyParser extends ParserListenerAdapter {
+class KeyParserListener extends ParserListenerAdapter {
     static final Intervals MINOR_INTERVAL = new Intervals("1 2 b3 4 5 b6 b7");
     static final Intervals MAJOR_INTERVAL = new Intervals("1 2 3 4 5 6 7");
     static final List<Intervals> MAJOR_SCALES = new ArrayList<>();
@@ -22,7 +22,7 @@ class KeyParser extends ParserListenerAdapter {
 
     final List<Note> notes;
 
-    public KeyParser() {
+    public KeyParserListener() {
         notes = new ArrayList<>();
     }
 
@@ -118,7 +118,7 @@ class KeyParser extends ParserListenerAdapter {
 
 }
 
-class MeasuresParser extends ParserListenerAdapter {
+class MeasuresParserListener extends ParserListenerAdapter {
     static final byte DENOMINATOR_LIMIT = 6;
     byte numerator;
     byte denominator;

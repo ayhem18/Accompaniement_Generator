@@ -11,10 +11,10 @@ public class Main {
     public static void testKeyParser() throws InvalidMidiDataException, IOException {
 
         MidiParser parser = new MidiParser(); // Remember, you can use any Parser!
-        KeyParser keyListener = new KeyParser();
+        KeyParserListener keyListener = new KeyParserListener();
         parser.addParserListener(keyListener);
 
-        MeasuresParser measureListener = new MeasuresParser();
+        MeasuresParserListener measureListener = new MeasuresParserListener();
         parser.addParserListener(measureListener);
 
 
