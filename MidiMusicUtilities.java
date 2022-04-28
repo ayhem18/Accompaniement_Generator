@@ -118,7 +118,7 @@ class KeyParserListener extends ParserListenerAdapter {
 
 }
 
-class MeasuresParserListener extends ParserListenerAdapter {
+class TimeParserListener extends ParserListenerAdapter {
     static final byte DENOMINATOR_LIMIT = 6;
     byte numerator;
     byte denominator;
@@ -135,5 +135,32 @@ class MeasuresParserListener extends ParserListenerAdapter {
                 onTimeSignatureParsed(d, n);
             }
         }
+    }
+}
+
+class MeasuresParserListener extends ParserListenerAdapter {
+    static int QUARTER_TO_WHOLE = 4;
+    byte numerator;
+    byte denominator;
+    double timePerMeasure;
+    private double currentTime;
+    List<List<Note>> measures;
+
+    public MeasuresParserListener(byte numerator, byte denominator) {
+        this.numerator = numerator;
+        this.denominator = denominator;
+        this.timePerMeasure = (numerator * QUARTER_TO_WHOLE )/ (double) denominator;
+        this.currentTime = 0.0;
+    }
+
+    @Override
+    public void onNoteParsed(Note note) {
+        if (measures.isEmpty() || currentTime >= timePerMeasure) {
+            measures.add(new ArrayList<>());
+            currentTime = 0;
+        }
+        currentTime += note.getDuration() * QUARTER_TO_WHOLE;
+        measures.get(measures.size() - 1).add(
+                new Note(KeyParserListener.C_INTEGER + note.getPositionInOctave(), note.getDuration()));
     }
 }

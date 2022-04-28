@@ -14,7 +14,7 @@ public class Main {
         KeyParserListener keyListener = new KeyParserListener();
         parser.addParserListener(keyListener);
 
-        MeasuresParserListener measureListener = new MeasuresParserListener();
+        TimeParserListener measureListener = new TimeParserListener();
         parser.addParserListener(measureListener);
 
 
