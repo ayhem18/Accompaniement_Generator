@@ -1,7 +1,6 @@
 import org.jfugue.parser.ParserListenerAdapter;
 import org.jfugue.theory.Intervals;
 import org.jfugue.theory.Note;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -12,7 +11,8 @@ class KeyParserListener extends ParserListenerAdapter {
     static final List<Intervals> MINOR_SCALES = new ArrayList<>();
 
     static final int C_INTEGER = 60;
-    static final int DEFAULT_OCTAVE = 5;
+    // static final int DEFAULT_OCTAVE = 5;
+
     static {
         for (int i = C_INTEGER; i < C_INTEGER + Note.OCTAVE; i++) {
             MINOR_SCALES.add(new Intervals(MINOR_INTERVAL.toString()).setRoot(new Note(i)));
@@ -132,6 +132,8 @@ class TimeParserListener extends ParserListenerAdapter {
     public void getTheTimeSignature () {
         for (byte d = 1; d <= DENOMINATOR_LIMIT; d++) {
             for (byte n = 1; n <= Math.pow(2, d); n++) {
+                if (this.numerator != 0 && this.denominator != 0) break;
+
                 onTimeSignatureParsed(d, n);
             }
         }
@@ -140,17 +142,40 @@ class TimeParserListener extends ParserListenerAdapter {
 
 class MeasuresParserListener extends ParserListenerAdapter {
     static int QUARTER_TO_WHOLE = 4;
+    static final List<Double> VALID_DURATIONS ;
+
+    static {
+        VALID_DURATIONS = new ArrayList<>();
+        for (int i = 0; i <= TimeParserListener.DENOMINATOR_LIMIT; i++) {
+            VALID_DURATIONS.add(1.0 / Math.pow(2, i));
+        }
+    }
+
+    static double fitDuration(double noteDuration) {
+        double difference = Integer.MAX_VALUE;
+        double bestDuration = 0;
+        for (double duration : VALID_DURATIONS) {
+            double d;
+            if (difference > (d = Math.abs(duration - noteDuration)) ) {
+                difference = d;
+                bestDuration = duration;
+            }
+        }
+        return bestDuration;
+    }
+
+
     byte numerator;
     byte denominator;
     double timePerMeasure;
     private double currentTime;
     List<List<Note>> measures;
-
     public MeasuresParserListener(byte numerator, byte denominator) {
         this.numerator = numerator;
         this.denominator = denominator;
-        this.timePerMeasure = (numerator * QUARTER_TO_WHOLE )/ (double) denominator;
+        this.timePerMeasure = (numerator * QUARTER_TO_WHOLE )/ (Math.pow(2, denominator));
         this.currentTime = 0.0;
+        measures = new ArrayList<>();
     }
 
     @Override
@@ -159,8 +184,9 @@ class MeasuresParserListener extends ParserListenerAdapter {
             measures.add(new ArrayList<>());
             currentTime = 0;
         }
-        currentTime += note.getDuration() * QUARTER_TO_WHOLE;
+        double noteDuration = fitDuration(note.getDuration());
+        currentTime += noteDuration * QUARTER_TO_WHOLE;
         measures.get(measures.size() - 1).add(
-                new Note(KeyParserListener.C_INTEGER + note.getPositionInOctave(), note.getDuration()));
+                new Note(KeyParserListener.C_INTEGER + note.getPositionInOctave(), noteDuration));
     }
 }
