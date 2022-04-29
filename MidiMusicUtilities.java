@@ -4,6 +4,7 @@ import org.jfugue.theory.Intervals;
 import org.jfugue.theory.Note;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 class MusicUtilities {
     static final Intervals MINOR_INTERVAL = new Intervals("1 2 b3 4 5 b6 b7");
@@ -50,6 +51,7 @@ class MusicUtilities {
     static final List<Chord> MAJOR_7_CHORDS = new ArrayList<>();
     static final List<Chord> MINOR_7_CHORDS = new ArrayList<>();
 
+    static final List<Chord> ALL_CHORDS = new ArrayList<>();
     static {
         for (int i =  C_LEFT_HAND_VALUE; i < C_LEFT_HAND_VALUE + Note.OCTAVE; i++) {
             MAJOR_CHORDS.add(new Chord(new Note(i), MAJOR_CHORD));
@@ -57,9 +59,30 @@ class MusicUtilities {
             MAJOR_7_CHORDS.add(new Chord(new Note(i), MAJOR_7_CHORD));
             MINOR_7_CHORDS.add(new Chord(new Note(i), MINOR_7_CHORD));
         }
+
+        ALL_CHORDS.addAll(MAJOR_7_CHORDS);
+        ALL_CHORDS.addAll(MINOR_7_CHORDS);
+        ALL_CHORDS.addAll(MAJOR_CHORDS);
+        ALL_CHORDS.addAll(MINOR_CHORDS);
+    }
+
+    static Chord getRandomChordWithDuration(double duration) {
+        Random generator = new Random();
+        int choice = generator.nextInt(2);
+        // if the choice value is equal to 1 then return a minor chord
+        if (choice == 1) {
+            return new Chord(
+                    new Note(generator.nextInt(Note.OCTAVE) + C_LEFT_HAND_VALUE, duration), MINOR_CHORD);
+        }
+
+        return new Chord(
+                new Note(generator.nextInt(Note.OCTAVE) + C_LEFT_HAND_VALUE, duration), MAJOR_CHORD);
+    }
+
+    static Chord getRandomChordWithDuration(int positionInOctave, Intervals chord, double duration) {
+        return new Chord(new Note(C_LEFT_HAND_VALUE + positionInOctave, duration), chord);
     }
 }
-
 
 class KeyParserListener extends ParserListenerAdapter {
     static final List<Intervals> MAJOR_SCALES = new ArrayList<>();
