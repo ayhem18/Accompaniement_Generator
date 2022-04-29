@@ -221,7 +221,6 @@ class MeasuresParserListener extends ParserListenerAdapter {
                 new Note(MusicUtilities.C_RIGHT_HAND_VALUE + note.getPositionInOctave(), noteDuration));
     }
 }
-
 class ChordsGenerator {
     Intervals keyScale;
     List<List<Note>> measures;
@@ -269,5 +268,4 @@ class ChordsGenerator {
         }
         return notesPerChord;
     }
-
 }
