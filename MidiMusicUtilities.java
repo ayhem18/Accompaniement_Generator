@@ -1,22 +1,76 @@
 import org.jfugue.parser.ParserListenerAdapter;
+import org.jfugue.theory.Chord;
 import org.jfugue.theory.Intervals;
 import org.jfugue.theory.Note;
 import java.util.ArrayList;
 import java.util.List;
 
-class KeyParserListener extends ParserListenerAdapter {
+class MusicUtilities {
     static final Intervals MINOR_INTERVAL = new Intervals("1 2 b3 4 5 b6 b7");
     static final Intervals MAJOR_INTERVAL = new Intervals("1 2 3 4 5 6 7");
+
+    static final int C_RIGHT_HAND_VALUE = 60;
+    static final byte DENOMINATOR_LIMIT = 6;
+
+    static final int C_LEFT_HAND_VALUE = 48;
+
+
+    static final List<Double> VALID_DURATIONS ;
+    static int QUARTER_TO_WHOLE = 4;
+
+    static {
+        VALID_DURATIONS = new ArrayList<>();
+        for (int i = 0; i <= MusicUtilities.DENOMINATOR_LIMIT; i++) {
+            VALID_DURATIONS.add(1.0 / Math.pow(2, i));
+        }
+    }
+
+    static double fitDuration(double noteDuration) {
+        double difference = Integer.MAX_VALUE;
+        double bestDuration = 0;
+        for (double duration : VALID_DURATIONS) {
+            double d;
+            if (difference > (d = Math.abs(duration - noteDuration)) ) {
+                difference = d;
+                bestDuration = duration;
+            }
+        }
+        return bestDuration;
+    }
+
+
+
+    static final Intervals MINOR_CHORD = new Intervals("0 4 7");
+    static final Intervals MAJOR_CHORD = new Intervals("0 3 7");
+    static final Intervals MAJOR_7_CHORD = new Intervals("0 4 7 11");
+    static final Intervals MINOR_7_CHORD = new Intervals("0 3 7 10");
+
+    static final List<Chord> MAJOR_CHORDS = new ArrayList<>();
+    static final List<Chord> MINOR_CHORDS = new ArrayList<>();
+    static final List<Chord> MAJOR_7_CHORDS = new ArrayList<>();
+    static final List<Chord> MINOR_7_CHORDS = new ArrayList<>();
+
+    static {
+        for (int i =  C_LEFT_HAND_VALUE; i < C_LEFT_HAND_VALUE + Note.OCTAVE; i++) {
+            MAJOR_CHORDS.add(new Chord(new Note(i), MAJOR_CHORD));
+            MINOR_CHORDS.add(new Chord(new Note(i), MINOR_CHORD));
+            MAJOR_7_CHORDS.add(new Chord(new Note(i), MAJOR_7_CHORD));
+            MINOR_7_CHORDS.add(new Chord(new Note(i), MINOR_7_CHORD));
+        }
+    }
+}
+
+
+class KeyParserListener extends ParserListenerAdapter {
     static final List<Intervals> MAJOR_SCALES = new ArrayList<>();
     static final List<Intervals> MINOR_SCALES = new ArrayList<>();
 
-    static final int C_INTEGER = 60;
     // static final int DEFAULT_OCTAVE = 5;
 
     static {
-        for (int i = C_INTEGER; i < C_INTEGER + Note.OCTAVE; i++) {
-            MINOR_SCALES.add(new Intervals(MINOR_INTERVAL.toString()).setRoot(new Note(i)));
-            MAJOR_SCALES.add(new Intervals(MAJOR_INTERVAL.toString()).setRoot(new Note(i)));
+        for (int i = MusicUtilities.C_RIGHT_HAND_VALUE; i < MusicUtilities.C_RIGHT_HAND_VALUE + Note.OCTAVE; i++) {
+            MINOR_SCALES.add(new Intervals(MusicUtilities.MINOR_INTERVAL.toString()).setRoot(new Note(i)));
+            MAJOR_SCALES.add(new Intervals(MusicUtilities.MAJOR_INTERVAL.toString()).setRoot(new Note(i)));
         }
     }
 
@@ -28,7 +82,7 @@ class KeyParserListener extends ParserListenerAdapter {
 
     @Override
     public void onNoteParsed(Note note) {
-        notes.add(new Note(C_INTEGER + note.getPositionInOctave()));
+        notes.add(new Note(MusicUtilities.C_RIGHT_HAND_VALUE + note.getPositionInOctave()));
     }
 
     public Intervals getKey() {
@@ -96,11 +150,11 @@ class KeyParserListener extends ParserListenerAdapter {
     private int findFitCounter(Intervals scale) {
         List<Note> notesDistinct = notes.stream()
                         .map(Note::getPositionInOctave).distinct()
-                .map(position -> new Note(C_INTEGER + position)).toList();
+                .map(position -> new Note(MusicUtilities.C_RIGHT_HAND_VALUE + position)).toList();
 
         List<Note> scaleNotes = new ArrayList<>(scale.getNotes().stream()
                 .map(Note::getPositionInOctave)
-                .map(position -> new Note(C_INTEGER + position)).toList());
+                .map(position -> new Note(MusicUtilities.C_RIGHT_HAND_VALUE + position)).toList());
 
         scaleNotes.retainAll(notesDistinct);
         return scaleNotes.size();
@@ -119,7 +173,6 @@ class KeyParserListener extends ParserListenerAdapter {
 }
 
 class TimeParserListener extends ParserListenerAdapter {
-    static final byte DENOMINATOR_LIMIT = 6;
     byte numerator;
     byte denominator;
 
@@ -130,7 +183,7 @@ class TimeParserListener extends ParserListenerAdapter {
     }
 
     public void getTheTimeSignature () {
-        for (byte d = 1; d <= DENOMINATOR_LIMIT; d++) {
+        for (byte d = 1; d <= MusicUtilities.DENOMINATOR_LIMIT; d++) {
             for (byte n = 1; n <= Math.pow(2, d); n++) {
                 if (this.numerator != 0 && this.denominator != 0) break;
 
@@ -141,28 +194,6 @@ class TimeParserListener extends ParserListenerAdapter {
 }
 
 class MeasuresParserListener extends ParserListenerAdapter {
-    static int QUARTER_TO_WHOLE = 4;
-    static final List<Double> VALID_DURATIONS ;
-
-    static {
-        VALID_DURATIONS = new ArrayList<>();
-        for (int i = 0; i <= TimeParserListener.DENOMINATOR_LIMIT; i++) {
-            VALID_DURATIONS.add(1.0 / Math.pow(2, i));
-        }
-    }
-
-    static double fitDuration(double noteDuration) {
-        double difference = Integer.MAX_VALUE;
-        double bestDuration = 0;
-        for (double duration : VALID_DURATIONS) {
-            double d;
-            if (difference > (d = Math.abs(duration - noteDuration)) ) {
-                difference = d;
-                bestDuration = duration;
-            }
-        }
-        return bestDuration;
-    }
 
 
     byte numerator;
@@ -173,7 +204,7 @@ class MeasuresParserListener extends ParserListenerAdapter {
     public MeasuresParserListener(byte numerator, byte denominator) {
         this.numerator = numerator;
         this.denominator = denominator;
-        this.timePerMeasure = (numerator * QUARTER_TO_WHOLE )/ (Math.pow(2, denominator));
+        this.timePerMeasure = (numerator * MusicUtilities.QUARTER_TO_WHOLE )/ (Math.pow(2, denominator));
         this.currentTime = 0.0;
         measures = new ArrayList<>();
     }
@@ -184,9 +215,59 @@ class MeasuresParserListener extends ParserListenerAdapter {
             measures.add(new ArrayList<>());
             currentTime = 0;
         }
-        double noteDuration = fitDuration(note.getDuration());
-        currentTime += noteDuration * QUARTER_TO_WHOLE;
+        double noteDuration = MusicUtilities.fitDuration(note.getDuration());
+        currentTime += noteDuration * MusicUtilities.QUARTER_TO_WHOLE;
         measures.get(measures.size() - 1).add(
-                new Note(KeyParserListener.C_INTEGER + note.getPositionInOctave(), noteDuration));
+                new Note(MusicUtilities.C_RIGHT_HAND_VALUE + note.getPositionInOctave(), noteDuration));
     }
+}
+
+class ChordsGenerator {
+    Intervals keyScale;
+    List<List<Note>> measures;
+    double timePerMeasure;
+    double timePerChord;
+
+    public ChordsGenerator(Intervals keyScale, List<List<Note>> measures, double timePerMeasure) {
+        this.keyScale = keyScale;
+        this.measures = measures;
+        this.timePerMeasure = timePerMeasure;
+
+        // if the timePerMeasure is an even integer
+        if (Math.floor(this.timePerMeasure) == this.timePerMeasure && (int) this.timePerMeasure % 2 == 0) {
+            timePerChord = timePerMeasure / 2;
+        }
+        else {
+            timePerChord = timePerMeasure;
+        }
+    }
+
+    public List<List<Note>> generateNotesPerChord() {
+        // flatten measures list
+        List<Note> notes = measures.stream().flatMap(List::stream).toList();
+
+        double currentTime = 0;
+        List<List<Note>> notesPerChord = new ArrayList<>();
+
+        for (Note n: notes) {
+            if (currentTime == 0) {
+                notesPerChord.add(new ArrayList<>());
+            }
+            double noteDuration = MusicUtilities.fitDuration(n.getDuration());
+            currentTime += noteDuration * MusicUtilities.QUARTER_TO_WHOLE;
+
+            notesPerChord.get(notesPerChord.size() - 1).add(n);
+
+            if (currentTime > timePerChord) {
+                currentTime -= timePerChord;
+                notesPerChord.add(new ArrayList<>());
+                notesPerChord.get(notesPerChord.size() - 1).add(n);
+            }
+            else if (currentTime == timePerChord){
+                currentTime = 0;
+            }
+        }
+        return notesPerChord;
+    }
+
 }

@@ -1,7 +1,6 @@
 import org.jfugue.midi.MidiFileManager;
 import org.jfugue.midi.MidiParser;
 import org.jfugue.pattern.Pattern;
-
 import javax.sound.midi.InvalidMidiDataException;
 import javax.sound.midi.MidiSystem;
 import java.io.File;
@@ -16,7 +15,7 @@ public class Main {
     public static void testKeyParser() throws InvalidMidiDataException, IOException {
         Pattern loadedFile = new Pattern();
         try {
-            File filePath = new File("src/testFiles/barbie_girl.mid");
+            File filePath = new File("src/testFiles/youre only lonely L.mid");
             loadedFile = MidiFileManager.loadPatternFromMidi(filePath);
         } catch (InvalidMidiDataException | IOException e) {
             e.printStackTrace();
@@ -33,12 +32,10 @@ public class Main {
 
         // parse first time to determine the key and time signatures
         parser.parse(MidiSystem.getSequence(
-                new File("src/testFiles/barbie_girl.mid")));
+                new File("src/testFiles/youre only lonely L.mid")));
 
 
         timeListener.getTheTimeSignature();
-        System.out.println(timeListener.numerator);
-        System.out.println(timeListener.denominator);
 
         // set the measures listener
         MeasuresParserListener measuresListener = new MeasuresParserListener(timeListener.numerator,
@@ -48,14 +45,12 @@ public class Main {
 
         // parse a second time to determine the notes in each measure
         parser.parse(MidiSystem.getSequence(
-                new File("src/testFiles/barbie_girl.mid")));
+                new File("src/testFiles/youre only lonely L.mid")));
 
-        // display the results
-        measuresListener.measures.forEach(measure -> {
-            System.out.println(measure);
-            System.out.println();
-        });
+        ChordsGenerator generator = new ChordsGenerator(keyListener.getKey(), measuresListener.measures,
+                measuresListener.timePerMeasure);
 
+        generator.generateNotesPerChord().forEach(System.out::println);
     }
 }
 
