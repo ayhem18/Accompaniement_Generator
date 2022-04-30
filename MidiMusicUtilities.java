@@ -12,13 +12,10 @@ class MusicUtilities {
 
     static final int C_RIGHT_HAND_VALUE = 60;
     static final byte DENOMINATOR_LIMIT = 6;
-
     static final int C_LEFT_HAND_VALUE = 48;
-
-
     static final List<Double> VALID_DURATIONS ;
     static int QUARTER_TO_WHOLE = 4;
-
+    static double DEFAULT_DURATION = 0.25;
     static {
         VALID_DURATIONS = new ArrayList<>();
         for (int i = 0; i <= MusicUtilities.DENOMINATOR_LIMIT; i++) {
@@ -38,8 +35,6 @@ class MusicUtilities {
         }
         return bestDuration;
     }
-
-
 
     static final Intervals MINOR_CHORD = new Intervals("0 4 7");
     static final Intervals MAJOR_CHORD = new Intervals("0 3 7");
@@ -79,8 +74,16 @@ class MusicUtilities {
                 new Note(generator.nextInt(Note.OCTAVE) + C_LEFT_HAND_VALUE, duration), MAJOR_CHORD);
     }
 
-    static Chord getRandomChordWithDuration(int positionInOctave, Intervals chord, double duration) {
+    static Chord getChord(int positionInOctave, Intervals chord, double duration) {
         return new Chord(new Note(C_LEFT_HAND_VALUE + positionInOctave, duration), chord);
+    }
+
+    /**
+     * @param note any Note object
+     * @return a note object with the default parameters to avoid issues with comparisons between Notes
+     */
+    static Note commonNoteVersion(Note note) {
+        return new Note(C_RIGHT_HAND_VALUE + note.getPositionInOctave(), DEFAULT_DURATION);
     }
 }
 
@@ -290,5 +293,22 @@ class ChordsGenerator {
             }
         }
         return notesPerChord;
+    }
+
+    public List<ChordObject> generateRandomChords() {
+        List<List<Note>> notesPerChord = generateNotesPerChord();
+        List<ChordObject> chords = new ArrayList<>();
+
+        chords.add(new ChordObject
+                (null, notesPerChord.get(0), notesPerChord.get(1), timePerChord));
+        int i;
+
+        for (i = 1; i < notesPerChord.size() - 1 ; i++) {
+            chords.add(new ChordObject(
+                            notesPerChord.get(i - 1), notesPerChord.get(i), notesPerChord.get(i + 1), timePerChord));
+        }
+        chords.add(new ChordObject(notesPerChord.get(i), notesPerChord.get(i + 1), null, timePerChord));
+
+        return chords;
     }
 }
