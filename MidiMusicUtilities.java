@@ -5,7 +5,6 @@ import org.jfugue.theory.Note;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-
 class MusicUtilities {
     static final Intervals MINOR_INTERVAL = new Intervals("1 2 b3 4 5 b6 b7");
     static final Intervals MAJOR_INTERVAL = new Intervals("1 2 3 4 5 6 7");
@@ -86,7 +85,7 @@ class MusicUtilities {
     }
 
     static Chord getChord(int positionInOctave, String chordType, double duration, int inversion) {
-        return getChord(positionInOctave, Chord.getIntervals(chordType),duration, inversion);
+        return getChord(positionInOctave, Chord.getIntervals(chordType), duration, inversion);
     }
 
     /**
@@ -231,17 +230,16 @@ class TimeParserListener extends ParserListenerAdapter {
 }
 
 class MeasuresParserListener extends ParserListenerAdapter {
-
-
     byte numerator;
     byte denominator;
+    // timePerMeasure can be induced from numerator and denominator
     double timePerMeasure;
     private double currentTime;
     List<List<Note>> measures;
     public MeasuresParserListener(byte numerator, byte denominator) {
         this.numerator = numerator;
         this.denominator = denominator;
-        this.timePerMeasure = (numerator * MusicUtilities.QUARTER_TO_WHOLE )/ (Math.pow(2, denominator));
+        this.timePerMeasure = numerator/ (Math.pow(2, denominator));
         this.currentTime = 0.0;
         measures = new ArrayList<>();
     }
@@ -253,7 +251,7 @@ class MeasuresParserListener extends ParserListenerAdapter {
             currentTime = 0;
         }
         double noteDuration = MusicUtilities.fitDuration(note.getDuration());
-        currentTime += noteDuration * MusicUtilities.QUARTER_TO_WHOLE;
+        currentTime += noteDuration;
         measures.get(measures.size() - 1).add(
                 new Note(MusicUtilities.C_RIGHT_HAND_VALUE + note.getPositionInOctave(), noteDuration));
     }
@@ -269,8 +267,9 @@ class ChordsGenerator {
         this.measures = measures;
         this.timePerMeasure = timePerMeasure;
 
-        // if the timePerMeasure is an even integer
-        if (Math.floor(this.timePerMeasure) == this.timePerMeasure && (int) this.timePerMeasure % 2 == 0) {
+        double interMediateTime = this.timePerMeasure * MusicUtilities.QUARTER_TO_WHOLE;
+        // if the intermediate timePerMeasure is an even integer
+        if (Math.floor(interMediateTime) == interMediateTime && (int) this.timePerMeasure % 2 == 0) {
             timePerChord = timePerMeasure / 2;
         }
         else {
@@ -290,7 +289,7 @@ class ChordsGenerator {
                 notesPerChord.add(new ArrayList<>());
             }
             double noteDuration = MusicUtilities.fitDuration(n.getDuration());
-            currentTime += noteDuration * MusicUtilities.QUARTER_TO_WHOLE;
+            currentTime += noteDuration;
 
             notesPerChord.get(notesPerChord.size() - 1).add(n);
 
@@ -310,6 +309,7 @@ class ChordsGenerator {
         List<List<Note>> notesPerChord = generateNotesPerChord();
         List<ChordObject> chords = new ArrayList<>();
 
+        // add the first chord explicitly as it does not have a previousNotes attributes
         chords.add(new ChordObject
                 (keyScale, null, notesPerChord.get(0), notesPerChord.get(1), timePerChord));
         int i;
@@ -318,8 +318,10 @@ class ChordsGenerator {
             chords.add(new ChordObject(keyScale,
                             notesPerChord.get(i - 1), notesPerChord.get(i), notesPerChord.get(i + 1), timePerChord));
         }
-        chords.add(new ChordObject(keyScale, notesPerChord.get(i), notesPerChord.get(i + 1), null, timePerChord));
-
+        // i at this point is equal to notesPerChord.size() - 1
+        // add the last chord explicitly as it does not have a nextNotes attribute
+        chords.add(
+                new ChordObject(keyScale, notesPerChord.get(i - 1), notesPerChord.get(i), null, timePerChord));
         return chords;
     }
 }

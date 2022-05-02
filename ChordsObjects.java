@@ -29,7 +29,7 @@ class ChordObject {
     public ChordObject(Intervals keyScale, List<Note> notesPrevious, List<Note> notesCurrent, List<Note> notesNext,
                        double chordDuration) {
         this(keyScale, notesPrevious, notesCurrent, notesNext, chordDuration,
-                MusicUtilities.getRandomChordWithDuration(chordDuration / MusicUtilities.QUARTER_TO_WHOLE));
+                MusicUtilities.getRandomChordWithDuration(chordDuration));
     }
     private List<Note> chordNotes() {
         return Arrays.stream(actualChord.getNotes()).map(MusicUtilities::commonNoteVersion).toList();
@@ -101,6 +101,9 @@ class ChordsReproduction {
 //    }
 
     static ChordObject crossOver(ChordObject chord1, ChordObject chord2) {
+
+        assert chord1.chordDuration == chord2.chordDuration;
+
         Random random = new Random();
         ChordObject[] chords = new ChordObject[] {chord1, chord2};
         Chord newChord =
@@ -113,29 +116,41 @@ class ChordsReproduction {
                 worseChord.chordDuration, newChord);
     }
 
+    /**
+     * This method mutates the type of the passed Chord
+     * The mutation operation mainly sets Minor to Minor-7 and vise versa
+     * and sets Major to Major-7 and vise versa
+     * without modifying the rest of the chord's aspects
+     * @param chord the chord object to mutate
+     */
     static void mutateChordType(ChordObject chord) {
+
         if (chord.actualChord.isMinor()) {
             chord.actualChord = MusicUtilities.getChord(chord.actualChord.getRoot().getPositionInOctave(),
+                    // sets the type to minor-7
                     MusicUtilities.MINOR_7_CHORD,
-                    chord.chordDuration / MusicUtilities.QUARTER_TO_WHOLE,
+                    chord.chordDuration,
                     chord.actualChord.getInversion());
         }
         else if (chord.actualChord.isMajor()) {
             chord.actualChord = MusicUtilities.getChord(chord.actualChord.getRoot().getPositionInOctave(),
+                    // sets the chord to major-7
                     MusicUtilities.MAJOR_7_CHORD,
-                    chord.chordDuration / MusicUtilities.QUARTER_TO_WHOLE,
+                    chord.chordDuration,
                     chord.actualChord.getInversion());
         }
         else if (chord.actualChord.getChordType().equalsIgnoreCase(MusicUtilities.MAJOR_7_CHORD_NAME)) {
             chord.actualChord = MusicUtilities.getChord(chord.actualChord.getRoot().getPositionInOctave(),
+                    // sets the chord to the basic major chord
                     MusicUtilities.MAJOR_CHORD,
-                    chord.chordDuration / MusicUtilities.QUARTER_TO_WHOLE,
+                    chord.chordDuration,
                     chord.actualChord.getInversion());
         }
         else {
             chord.actualChord = MusicUtilities.getChord(chord.actualChord.getRoot().getPositionInOctave(),
+                    // sets the chord to the basic minor chord
                     MusicUtilities.MINOR_CHORD,
-                    chord.chordDuration / MusicUtilities.QUARTER_TO_WHOLE,
+                    chord.chordDuration,
                     chord.actualChord.getInversion());
         }
     }
@@ -160,6 +175,14 @@ class Evolution {
         generator = new Random();
     }
 
+    private void performElitism(List<ChordObject> oldGeneration, List<ChordObject> newGeneration) {
+        int size = oldGeneration.size();
+        oldGeneration.sort((chord1, chord2) -> (int) Math.signum(chord1.fitnessFunction() - chord2.fitnessFunction()));
+        for (int i = 0 ; i < ELITE_PERCENTAGE * size ; i++) {
+            // remove the elite elements from the oldGeneration to the new Ones
+            newGeneration.add(oldGeneration.remove(oldGeneration.size() - 1));
+        }
+    }
     private void crossOver(List<ChordObject> oldGeneration, List<ChordObject> newGeneration) {
         while(oldGeneration.size() >= 2) {
             ChordObject parent1 = oldGeneration.remove(generator.nextInt(oldGeneration.size()));
@@ -181,14 +204,8 @@ class Evolution {
         // in case one element is left in the oldGeneration list
         newGeneration.addAll(oldGeneration);
     }
-
-    private void performElitism(List<ChordObject> oldGeneration, List<ChordObject> newGeneration) {
-        int size = oldGeneration.size();
-        oldGeneration.sort((chord1, chord2) -> (int) Math.signum(chord1.fitnessFunction() - chord2.fitnessFunction()));
-        for (int i = 0 ; i < ELITE_PERCENTAGE * size ; i++) {
-            // remove the elite elements from the oldGeneration to the new Ones
-            newGeneration.add(oldGeneration.remove(oldGeneration.size() - 1));
-        }
+    private double evaluateTotalFitness() {
+        return initialGeneration.stream().mapToDouble(ChordObject::fitnessFunction).sum();
     }
 
     public void simulateEvolution() {
@@ -197,8 +214,14 @@ class Evolution {
 
         while (totalFitness < populationSize * wantedAverageFitness) {
             List<ChordObject> newGeneration = new ArrayList<>();
+            // pass the best parents directly to the next generation
             performElitism(initialGeneration, newGeneration);
+            // perform crossOver to (possibly) obtain better offspring
             crossOver(initialGeneration, newGeneration);
+            // set the corresponding variables
+            initialGeneration = newGeneration;
+            // evaluate the total performance
+            totalFitness = evaluateTotalFitness();
         }
     }
 

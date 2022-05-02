@@ -12,10 +12,10 @@ public class Main {
     static double WANTED_AVERAGE_FITNESS = 6;
 
     public static void main(String[] args) throws InvalidMidiDataException, IOException {
-        testKeyParser();
+        analyzeMidiFile("src/testFiles/input1.mid");
     }
 
-    public static void analyzeFile(String filePath) throws InvalidMidiDataException, IOException {
+    public static void analyzeMidiFile(String filePath) throws InvalidMidiDataException, IOException {
 //        Pattern loadedFile = new Pattern();
 //        try {
 //            loadedFile = MidiFileManager.loadPatternFromMidi(new File(filePath));
@@ -59,7 +59,7 @@ public class Main {
 
         Pattern loadedFile = new Pattern();
         try {
-            File filePath = new File("src/testFiles/youre only lonely L.mid");
+            File filePath = new File("src/testFiles/you are only lonely L.mid");
             loadedFile = MidiFileManager.loadPatternFromMidi(filePath);
         } catch (InvalidMidiDataException | IOException e) {
             e.printStackTrace();
@@ -76,7 +76,7 @@ public class Main {
 
         // parse first time to determine the key and time signatures
         parser.parse(MidiSystem.getSequence(
-                new File("src/testFiles/youre only lonely L.mid")));
+                new File("src/testFiles/you are only lonely L.mid")));
 
 
         timeListener.getTheTimeSignature();
@@ -89,7 +89,7 @@ public class Main {
 
         // parse a second time to determine the notes in each measure
         parser.parse(MidiSystem.getSequence(
-                new File("src/testFiles/youre only lonely L.mid")));
+                new File("src/testFiles/you are only lonely L.mid")));
 
         ChordsGenerator generator = new ChordsGenerator(keyListener.getKey(), measuresListener.measures,
                 measuresListener.timePerMeasure);
