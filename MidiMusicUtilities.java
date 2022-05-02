@@ -36,10 +36,15 @@ class MusicUtilities {
         return bestDuration;
     }
 
-    static final Intervals MINOR_CHORD = new Intervals("0 4 7");
-    static final Intervals MAJOR_CHORD = new Intervals("0 3 7");
-    static final Intervals MAJOR_7_CHORD = new Intervals("0 4 7 11");
-    static final Intervals MINOR_7_CHORD = new Intervals("0 3 7 10");
+    static final String MINOR_CHORD_NAME = "MIN";
+    static final String MAJOR_CHORD_NAME = "MAJ";
+    static final String MAJOR_7_CHORD_NAME = "MAJ7";
+    static final String MINOR_7_CHORD_NAME = "MIN7";
+
+    static final Intervals MINOR_CHORD = new Intervals("1 b3 5");
+    static final Intervals MAJOR_CHORD = new Intervals("1 3 5");
+    static final Intervals MAJOR_7_CHORD = new Intervals("1 3 5 7");
+    static final Intervals MINOR_7_CHORD = new Intervals("1 b3 5 b7");
 
     static final List<Chord> MAJOR_CHORDS = new ArrayList<>();
     static final List<Chord> MINOR_CHORDS = new ArrayList<>();
@@ -67,15 +72,21 @@ class MusicUtilities {
         // if the choice value is equal to 1 then return a minor chord
         if (choice == 1) {
             return new Chord(
-                    new Note(generator.nextInt(Note.OCTAVE) + C_LEFT_HAND_VALUE, duration), MINOR_CHORD);
+                    new Note(generator.nextInt(Note.OCTAVE) + C_LEFT_HAND_VALUE, duration), MINOR_CHORD)
+                    .setInversion(generator.nextInt(3));
         }
 
         return new Chord(
-                new Note(generator.nextInt(Note.OCTAVE) + C_LEFT_HAND_VALUE, duration), MAJOR_CHORD);
+                new Note(generator.nextInt(Note.OCTAVE) + C_LEFT_HAND_VALUE, duration), MAJOR_CHORD)
+                .setInversion(generator.nextInt(3));
     }
 
-    static Chord getChord(int positionInOctave, Intervals chord, double duration) {
-        return new Chord(new Note(C_LEFT_HAND_VALUE + positionInOctave, duration), chord);
+    static Chord getChord(int positionInOctave, Intervals chord, double duration, int inversion) {
+        return new Chord(new Note(C_LEFT_HAND_VALUE + positionInOctave, duration), chord).setInversion(inversion);
+    }
+
+    static Chord getChord(int positionInOctave, String chordType, double duration, int inversion) {
+        return getChord(positionInOctave, Chord.getIntervals(chordType),duration, inversion);
     }
 
     /**
@@ -295,19 +306,19 @@ class ChordsGenerator {
         return notesPerChord;
     }
 
-    public List<ChordObject> generateRandomChords() {
+    public List<ChordObject> generateRandomChords(Intervals keyScale) {
         List<List<Note>> notesPerChord = generateNotesPerChord();
         List<ChordObject> chords = new ArrayList<>();
 
         chords.add(new ChordObject
-                (null, notesPerChord.get(0), notesPerChord.get(1), timePerChord));
+                (keyScale, null, notesPerChord.get(0), notesPerChord.get(1), timePerChord));
         int i;
 
         for (i = 1; i < notesPerChord.size() - 1 ; i++) {
-            chords.add(new ChordObject(
+            chords.add(new ChordObject(keyScale,
                             notesPerChord.get(i - 1), notesPerChord.get(i), notesPerChord.get(i + 1), timePerChord));
         }
-        chords.add(new ChordObject(notesPerChord.get(i), notesPerChord.get(i + 1), null, timePerChord));
+        chords.add(new ChordObject(keyScale, notesPerChord.get(i), notesPerChord.get(i + 1), null, timePerChord));
 
         return chords;
     }
