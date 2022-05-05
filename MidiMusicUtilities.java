@@ -255,6 +255,7 @@ class MeasuresParserListener extends ParserListenerAdapter {
         measures.get(measures.size() - 1).add(
                 new Note(MusicUtilities.C_RIGHT_HAND_VALUE + note.getPositionInOctave(), noteDuration));
     }
+
 }
 class ChordsGenerator {
     Intervals keyScale;
@@ -289,14 +290,18 @@ class ChordsGenerator {
                 notesPerChord.add(new ArrayList<>());
             }
             double noteDuration = MusicUtilities.fitDuration(n.getDuration());
-            currentTime += noteDuration;
 
-            notesPerChord.get(notesPerChord.size() - 1).add(n);
+            notesPerChord.get(notesPerChord.size() - 1).add(
+                    new Note(n).setDuration(Math.min(timePerChord - currentTime, noteDuration)));
+
+
+            currentTime += noteDuration;
 
             if (currentTime > timePerChord) {
                 currentTime -= timePerChord;
                 notesPerChord.add(new ArrayList<>());
-                notesPerChord.get(notesPerChord.size() - 1).add(n);
+                notesPerChord.get(notesPerChord.size() - 1).add(
+                        new Note(n).setDuration(currentTime));
             }
             else if (currentTime == timePerChord){
                 currentTime = 0;
@@ -322,6 +327,10 @@ class ChordsGenerator {
         // add the last chord explicitly as it does not have a nextNotes attribute
         chords.add(
                 new ChordObject(keyScale, notesPerChord.get(i - 1), notesPerChord.get(i), null, timePerChord));
+
+//        for (List<Note> ln : notesPerChord) {
+//            System.out.println(ln.stream().mapToDouble(Note::getDuration).sum());
+//        }
         return chords;
     }
 }

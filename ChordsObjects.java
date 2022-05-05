@@ -1,6 +1,9 @@
 import org.jfugue.theory.Chord;
 import org.jfugue.theory.Intervals;
 import org.jfugue.theory.Note;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.*;
 
 class ChordObject {
@@ -39,11 +42,12 @@ class ChordObject {
      * @return a numerical value reflecting how musically appealing (from a theoretical point of view) the chord is
      */
     public double fitnessFunction() {
-        fitnessValue = pointsForKeyScale(keyScale, POINTS_FOR_KEY_SCALE) +
+        fitnessValue = Math.round(pointsForKeyScale(keyScale, POINTS_FOR_KEY_SCALE) +
                 pointsForChordUnit(notesCurrent, POINTS_FOR_CURRENT_CHORD_UNIT) +
                 pointsForChordUnit(notesNext, POINTS_FOR_DIFFERENT_CHORD_UNIT) +
                 pointsForChordUnit(notesPrevious, POINTS_FOR_DIFFERENT_CHORD_UNIT) +
-                pointsForRootNote(notesCurrent, POINTS_FOR_ROOT_NOTE);
+                pointsForRootNote(notesCurrent, POINTS_FOR_ROOT_NOTE));
+        fitnessValue = (new BigDecimal(fitnessValue)).setScale(3, RoundingMode.HALF_UP).doubleValue();
         return fitnessValue * 1;
 
     }
@@ -62,8 +66,18 @@ class ChordObject {
         if (chordUnit == null) {
             return 0.5 * coefficient;
         }
+        List<Double> values = chordUnit.stream().mapToDouble(Note::getDuration).boxed().toList();
+        double minDuration = chordUnit.stream().mapToDouble(Note::getDuration).min().orElse(0.25);
 
-        List<Note> chordUnitNotes = chordUnit.stream().map(MusicUtilities::commonNoteVersion).toList();
+        // List<Note> chordUnitNotes = chordUnit.stream().map(MusicUtilities::commonNoteVersion).toList();
+        List<Note> chordUnitNotes = chordUnit.stream().map((note) -> {
+            List<Note> list = new ArrayList<>();
+            for (int i = 0; i < note.getDuration() / minDuration; i++) {
+                list.add(MusicUtilities.commonNoteVersion(note));
+            }
+            return list;
+        }).flatMap(List::stream).toList();
+
         int count = 0; int total = 0;
         for (Note n: chordUnitNotes) {
             total ++;
@@ -75,6 +89,8 @@ class ChordObject {
 
     private double pointsForRootNote(List<Note> chordUnit, double coefficient) {
         Note firstNote = MusicUtilities.commonNoteVersion(chordUnit.get(0));
+        boolean contains = chordNotes().contains(firstNote);//? 1.0 : 0.0);
+        boolean firstEqual = chordNotes().get(0).equals(firstNote);
         return coefficient * 0.5 * (chordNotes().contains(firstNote)? 1.0 : 0.0) +
         coefficient * 0.5 * (chordNotes().get(0).equals(firstNote)? 1.0 : 0.0);
     }
@@ -106,15 +122,26 @@ class ChordsReproduction {
         assert chord1.chordDuration == chord2.chordDuration;
 
         Random random = new Random();
+        // an array of chordObject to facilitate the randomization
         ChordObject[] chords = new ChordObject[] {chord1, chord2};
         Chord newChord =
                 MusicUtilities.getChord(chords[random.nextInt(2)].actualChord.getRoot().getPositionInOctave(),
                         chords[random.nextInt(2)].actualChord.getChordType(),
                         chord2.chordDuration,
                         chords[random.nextInt(2)].actualChord.getInversion());
-        ChordObject worseChord = chord1.fitnessFunction() > chord2.fitnessFunction() ? chord2 : chord1;
+        ChordObject worseChord = chord1.fitnessValue > chord2.fitnessValue ? chord2 : chord1;
         return new ChordObject(worseChord.keyScale, worseChord.notesPrevious, worseChord.notesCurrent, worseChord.notesNext,
                 worseChord.chordDuration, newChord);
+    }
+
+    static Chord crossOver(Chord chord1, Chord chord2, double duration) {
+        Random random = new Random();
+        // an array of chordObject to facilitate the randomization
+        Chord[] chords = new Chord[] {chord1, chord2};
+        return MusicUtilities.getChord(chords[random.nextInt(2)].getRoot().getPositionInOctave(),
+                        chords[random.nextInt(2)].getChordType(),
+                        duration,
+                        chords[random.nextInt(2)].getInversion());
     }
 
     /**
@@ -158,7 +185,8 @@ class ChordsReproduction {
 
     static void mutateChordInversion(ChordObject chord) {
         int inversion = chord.actualChord.getInversion();
-        chord.actualChord.setInversion(inversion + (int) Math.ceil(Math.random() * 2));
+        int newInversion  = chord.actualChord.getInversion() + (int) Math.ceil(Math.random() * 2);
+        chord.actualChord.setInversion(newInversion);
 
     }
 }
@@ -188,7 +216,7 @@ class Evolution {
         while(oldGeneration.size() >= 2) {
             ChordObject parent1 = oldGeneration.remove(generator.nextInt(oldGeneration.size()));
             ChordObject parent2 = oldGeneration.remove(generator.nextInt(oldGeneration.size()));
-            ChordObject betterParent = parent1.fitnessFunction() > parent2.fitnessFunction() ? parent1 : parent2;
+            ChordObject betterParent = parent1.fitnessValue > parent2.fitnessValue ? parent1 : parent2;
             ChordObject offspring = ChordsReproduction.crossOver(parent1, parent2);
 
             double mutationDeterminative = generator.nextDouble();

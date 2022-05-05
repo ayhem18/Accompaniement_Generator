@@ -10,15 +10,25 @@ import java.io.IOException;
 
 public class Main {
 
-    static double WANTED_AVERAGE_FITNESS = 8;
+    static double WANTED_AVERAGE_FITNESS = 7.0;
 
     public static void main(String[] args) throws InvalidMidiDataException, IOException {
         String file = "src/testFiles/input1.mid";
         displayMidiFile(file);
-        analyzeMidiFile(file);
+        Pattern chords = generateAccompaniment(file);
+        System.out.println(chords);
+        displayMidiFile(file, chords);
+
+//        Pattern mainChords = new Pattern("T180 V0 D4Min9hqit Ri G3Maj13hqi Ri C4Maj9wh Rh");
+//        mainChords.add("D4Minhqit Ri G4Majhqi Ri C4Majwh Rht");
+//
+//        Pattern pianoTouch = new Pattern("T180 V1 Rw | Rw | Rhi | G4qi G3s A3is CMajis ri");
+//        pianoTouch.add("Rw | Rw | Rhi | G4s C5wa100d0");
+//
+//        (new Player()).play(mainChords, pianoTouch);
     }
 
-    public static void analyzeMidiFile(String filePath) throws InvalidMidiDataException, IOException {
+    public static Pattern generateAccompaniment(String filePath) throws InvalidMidiDataException, IOException {
 
         MidiParser parser = new MidiParser();
         // determine the key scale of the song
@@ -50,6 +60,13 @@ public class Main {
                 generator.generateRandomChords(keyListener.getKey()), WANTED_AVERAGE_FITNESS);
 
         evolution.simulateEvolution();
+
+        Pattern accompaniment = new Pattern("V1").setInstrument("Steel_String_Guitar");
+        for (ChordObject chord : evolution.initialGeneration) {
+            accompaniment.add(chord.actualChord);
+        }
+
+        return accompaniment;
     }
 
     public static void displayMidiFile(String filePath) {
@@ -62,6 +79,18 @@ public class Main {
         System.out.println(loadedFile);
         new Player().play(loadedFile);
     }
+
+    public static void displayMidiFile(String filePath, Pattern accompaniment) {
+        Pattern loadedFile = new Pattern();
+        try {
+            loadedFile = MidiFileManager.loadPatternFromMidi(new File(filePath));
+        } catch (InvalidMidiDataException | IOException e) {
+            e.printStackTrace();
+        }
+        System.out.println(loadedFile);
+        new Player().play(loadedFile, accompaniment);
+    }
+
     public static void testKeyParser() throws InvalidMidiDataException, IOException {
 
         Pattern loadedFile = new Pattern();
