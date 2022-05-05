@@ -1,7 +1,6 @@
 import org.jfugue.theory.Chord;
 import org.jfugue.theory.Intervals;
 import org.jfugue.theory.Note;
-
 import java.util.*;
 
 class ChordObject {
@@ -16,6 +15,7 @@ class ChordObject {
     double chordDuration;
     Chord actualChord;
 
+    double fitnessValue;
     public ChordObject(Intervals keyScale, List<Note> notesPrevious, List<Note> notesCurrent, List<Note> notesNext,
                        double chordDuration, Chord actualChord) {
         this.keyScale = keyScale;
@@ -35,16 +35,17 @@ class ChordObject {
         return Arrays.stream(actualChord.getNotes()).map(MusicUtilities::commonNoteVersion).toList();
     }
 
-
     /**
      * @return a numerical value reflecting how musically appealing (from a theoretical point of view) the chord is
      */
     public double fitnessFunction() {
-        return pointsForKeyScale(keyScale, POINTS_FOR_KEY_SCALE) +
+        fitnessValue = pointsForKeyScale(keyScale, POINTS_FOR_KEY_SCALE) +
                 pointsForChordUnit(notesCurrent, POINTS_FOR_CURRENT_CHORD_UNIT) +
                 pointsForChordUnit(notesNext, POINTS_FOR_DIFFERENT_CHORD_UNIT) +
                 pointsForChordUnit(notesPrevious, POINTS_FOR_DIFFERENT_CHORD_UNIT) +
                 pointsForRootNote(notesCurrent, POINTS_FOR_ROOT_NOTE);
+        return fitnessValue * 1;
+
     }
     private double pointsForKeyScale(Intervals keyScale, double coefficient) {
         List<Note> keyScaleNotes = keyScale.getNotes().stream().map(MusicUtilities::commonNoteVersion).toList();
@@ -164,7 +165,7 @@ class ChordsReproduction {
 
 class Evolution {
     static double CHORD_TYPE_MUTATION_FREQUENCY = 0.05;
-    static double INVERSION_MUTATION_FREQUENCY = 0.15;
+    static double INVERSION_MUTATION_FREQUENCY = 0.1;
     static double ELITE_PERCENTAGE = 0.1;
     List<ChordObject> initialGeneration ;
     double wantedAverageFitness;
@@ -224,7 +225,6 @@ class Evolution {
             totalFitness = evaluateTotalFitness();
         }
     }
-
 }
 
 

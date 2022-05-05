@@ -1,6 +1,7 @@
 import org.jfugue.midi.MidiFileManager;
 import org.jfugue.midi.MidiParser;
 import org.jfugue.pattern.Pattern;
+import org.jfugue.player.Player;
 
 import javax.sound.midi.InvalidMidiDataException;
 import javax.sound.midi.MidiSystem;
@@ -9,19 +10,15 @@ import java.io.IOException;
 
 public class Main {
 
-    static double WANTED_AVERAGE_FITNESS = 6;
+    static double WANTED_AVERAGE_FITNESS = 8;
 
     public static void main(String[] args) throws InvalidMidiDataException, IOException {
-        analyzeMidiFile("src/testFiles/input1.mid");
+        String file = "src/testFiles/input1.mid";
+        displayMidiFile(file);
+        analyzeMidiFile(file);
     }
 
     public static void analyzeMidiFile(String filePath) throws InvalidMidiDataException, IOException {
-//        Pattern loadedFile = new Pattern();
-//        try {
-//            loadedFile = MidiFileManager.loadPatternFromMidi(new File(filePath));
-//        } catch (InvalidMidiDataException | IOException e) {
-//            e.printStackTrace();
-//        }
 
         MidiParser parser = new MidiParser();
         // determine the key scale of the song
@@ -55,6 +52,16 @@ public class Main {
         evolution.simulateEvolution();
     }
 
+    public static void displayMidiFile(String filePath) {
+        Pattern loadedFile = new Pattern();
+        try {
+            loadedFile = MidiFileManager.loadPatternFromMidi(new File(filePath));
+        } catch (InvalidMidiDataException | IOException e) {
+            e.printStackTrace();
+        }
+        System.out.println(loadedFile);
+        new Player().play(loadedFile);
+    }
     public static void testKeyParser() throws InvalidMidiDataException, IOException {
 
         Pattern loadedFile = new Pattern();

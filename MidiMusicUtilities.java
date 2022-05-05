@@ -269,7 +269,7 @@ class ChordsGenerator {
 
         double interMediateTime = this.timePerMeasure * MusicUtilities.QUARTER_TO_WHOLE;
         // if the intermediate timePerMeasure is an even integer
-        if (Math.floor(interMediateTime) == interMediateTime && (int) this.timePerMeasure % 2 == 0) {
+        if (Math.floor(interMediateTime) == interMediateTime && (int) interMediateTime % 2 == 0) {
             timePerChord = timePerMeasure / 2;
         }
         else {
