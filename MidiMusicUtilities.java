@@ -5,6 +5,7 @@ import org.jfugue.theory.Note;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+
 class MusicUtilities {
     static final Intervals MINOR_INTERVAL = new Intervals("1 2 b3 4 5 b6 b7");
     static final Intervals MAJOR_INTERVAL = new Intervals("1 2 3 4 5 6 7");
@@ -81,7 +82,8 @@ class MusicUtilities {
     }
 
     static Chord getChord(int positionInOctave, Intervals chord, double duration, int inversion) {
-        return new Chord(new Note(C_LEFT_HAND_VALUE + positionInOctave, duration), chord).setInversion(inversion);
+        return new Chord(new Note(C_LEFT_HAND_VALUE + positionInOctave, duration), chord).
+                setInversion(inversion % chord.size());
     }
 
     static Chord getChord(int positionInOctave, String chordType, double duration, int inversion) {

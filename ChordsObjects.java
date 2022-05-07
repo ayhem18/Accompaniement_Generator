@@ -34,8 +34,17 @@ class ChordObject {
         this(keyScale, notesPrevious, notesCurrent, notesNext, chordDuration,
                 MusicUtilities.getRandomChordWithDuration(chordDuration));
     }
+
+    public ChordObject(ChordObject another) {
+        this(another.keyScale, another.notesPrevious, another.notesCurrent, another.notesNext, another.chordDuration,
+                another.actualChord);
+    }
     private List<Note> chordNotes() {
         return Arrays.stream(actualChord.getNotes()).map(MusicUtilities::commonNoteVersion).toList();
+    }
+
+    public void setActualChord(Chord actualChord) {
+        this.actualChord = actualChord;
     }
 
     /**
@@ -117,32 +126,91 @@ class ChordsReproduction {
 //        return Arrays.asList(chordObject1, chordObject2);
 //    }
 
-    static ChordObject crossOver(ChordObject chord1, ChordObject chord2) {
+    /**
+     * @param chord1 first chord
+     * @param chord2 second chord
+     * @return a new chord formed randomly out of the two passed chords
+     */
+    private static Chord crossOver(Chord chord1, Chord chord2, double duration) {
+        Random generator = new Random();
+        double choice = generator.nextDouble();
+        // determine the chord type
+        Intervals chordType;
+        if (choice < 0.45) {
+            chordType = chord1.getIntervals();
+        }
+        else if (choice < 0.9) {
+            chordType = chord2.getIntervals();
+        }
+        else {
+            chordType = Arrays.asList(MusicUtilities.MAJOR_CHORD, MusicUtilities.MINOR_7_CHORD,
+                    MusicUtilities.MAJOR_7_CHORD, MusicUtilities.MINOR_7_CHORD).get(generator.nextInt(4));
+        }
+        // determine the root note
+        int positionInOctave;
+        choice = generator.nextDouble();
 
+        if (choice < 0.45) {
+            positionInOctave = chord1.getRoot().getPositionInOctave();
+        }
+        else if (choice < 0.9) {
+            positionInOctave = chord2.getRoot().getPositionInOctave();
+        }
+        else {
+            positionInOctave = generator.nextInt(Note.OCTAVE);
+        }
+
+        // determine the inversion
+        choice = generator.nextDouble();
+        int inversion;
+
+        if (choice < 0.45) {
+            inversion = chord1.getInversion();
+        }
+        else if (choice < 0.9) {
+            inversion = chord2.getInversion();
+        }
+        else {
+            inversion = generator.nextInt(chordType.size());
+        }
+        return MusicUtilities.getChord(positionInOctave, chordType, duration, inversion);
+    }
+    static List<ChordObject> crossOver(ChordObject chord1, ChordObject chord2) {
         assert chord1.chordDuration == chord2.chordDuration;
-
-        Random random = new Random();
-        // an array of chordObject to facilitate the randomization
-        ChordObject[] chords = new ChordObject[] {chord1, chord2};
-        Chord newChord =
-                MusicUtilities.getChord(chords[random.nextInt(2)].actualChord.getRoot().getPositionInOctave(),
-                        chords[random.nextInt(2)].actualChord.getChordType(),
-                        chord2.chordDuration,
-                        chords[random.nextInt(2)].actualChord.getInversion());
-        ChordObject worseChord = chord1.fitnessValue > chord2.fitnessValue ? chord2 : chord1;
-        return new ChordObject(worseChord.keyScale, worseChord.notesPrevious, worseChord.notesCurrent, worseChord.notesNext,
-                worseChord.chordDuration, newChord);
+        List<ChordObject> newPair = new ArrayList<>();
+        newPair.add(new ChordObject(chord1));
+        newPair.add(new ChordObject(chord2));
+        newPair.get(0).setActualChord(crossOver(chord1.actualChord, chord2.actualChord, chord1.chordDuration));
+        newPair.get(1).setActualChord(crossOver(chord1.actualChord, chord2.actualChord, chord1.chordDuration));
+        return newPair;
     }
 
-    static Chord crossOver(Chord chord1, Chord chord2, double duration) {
-        Random random = new Random();
-        // an array of chordObject to facilitate the randomization
-        Chord[] chords = new Chord[] {chord1, chord2};
-        return MusicUtilities.getChord(chords[random.nextInt(2)].getRoot().getPositionInOctave(),
-                        chords[random.nextInt(2)].getChordType(),
-                        duration,
-                        chords[random.nextInt(2)].getInversion());
-    }
+//    static ChordObject crossOver(ChordObject chord1, ChordObject chord2) {
+//
+//        assert chord1.chordDuration == chord2.chordDuration;
+//
+//        Random random = new Random();
+//        // an array of chordObject to facilitate the randomization
+//        ChordObject[] chords = new ChordObject[] {chord1, chord2};
+//        Chord newChord =
+//                MusicUtilities.getChord(chords[random.nextInt(2)].actualChord.getRoot().getPositionInOctave(),
+//                        chords[random.nextInt(2)].actualChord.getChordType(),
+//                        chord2.chordDuration,
+//                        chords[random.nextInt(2)].actualChord.getInversion());
+//        ChordObject worseChord = chord1.fitnessValue > chord2.fitnessValue ? chord2 : chord1;
+//        return new ChordObject(worseChord.keyScale, worseChord.notesPrevious, worseChord.notesCurrent, worseChord.notesNext,
+//                worseChord.chordDuration, newChord);
+//    }
+
+//    static Chord crossOver(Chord chord1, Chord chord2, double duration) {
+//        Random random = new Random();
+//        // an array of chordObject to facilitate the randomization
+//        Chord[] chords = new Chord[] {chord1, chord2};
+//        return MusicUtilities.getChord(chords[random.nextInt(2)].getRoot().getPositionInOctave(),
+//                        chords[random.nextInt(2)].getChordType(),
+//                        duration,
+//                        chords[random.nextInt(2)].getInversion());
+//    }
 
     /**
      * This method mutates the type of the passed Chord
@@ -186,8 +254,7 @@ class ChordsReproduction {
     static void mutateChordInversion(ChordObject chord) {
         int inversion = chord.actualChord.getInversion();
         int newInversion  = chord.actualChord.getInversion() + (int) Math.ceil(Math.random() * 2);
-        chord.actualChord.setInversion(newInversion);
-
+        chord.actualChord.setInversion(newInversion % chord.actualChord.getIntervals().size());
     }
 }
 
@@ -216,19 +283,30 @@ class Evolution {
         while(oldGeneration.size() >= 2) {
             ChordObject parent1 = oldGeneration.remove(generator.nextInt(oldGeneration.size()));
             ChordObject parent2 = oldGeneration.remove(generator.nextInt(oldGeneration.size()));
-            ChordObject betterParent = parent1.fitnessValue > parent2.fitnessValue ? parent1 : parent2;
-            ChordObject offspring = ChordsReproduction.crossOver(parent1, parent2);
+            List<ChordObject> offsprings = ChordsReproduction.crossOver(parent1, parent2);
 
+            // decide whether to mutate the first offspring
             double mutationDeterminative = generator.nextDouble();
             if (mutationDeterminative < INVERSION_MUTATION_FREQUENCY) {
-                ChordsReproduction.mutateChordInversion(offspring);
+                ChordsReproduction.mutateChordInversion(offsprings.get(0));
             }
 
             if (mutationDeterminative < CHORD_TYPE_MUTATION_FREQUENCY) {
-                ChordsReproduction.mutateChordType(offspring);
+                ChordsReproduction.mutateChordType(offsprings.get(0));
             }
-            newGeneration.add(betterParent);
-            newGeneration.add(offspring);
+
+            // decide whether to mutate the second offspring
+            mutationDeterminative = generator.nextDouble();
+
+            if (mutationDeterminative < INVERSION_MUTATION_FREQUENCY) {
+                ChordsReproduction.mutateChordInversion(offsprings.get(1));
+            }
+
+            if (mutationDeterminative < CHORD_TYPE_MUTATION_FREQUENCY) {
+                ChordsReproduction.mutateChordType(offsprings.get(1));
+            }
+            // add the two offsprings to the new generation
+            newGeneration.addAll(offsprings);
         }
         // in case one element is left in the oldGeneration list
         newGeneration.addAll(oldGeneration);

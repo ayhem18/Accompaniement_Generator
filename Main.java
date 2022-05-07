@@ -6,18 +6,21 @@ import org.jfugue.player.Player;
 import javax.sound.midi.InvalidMidiDataException;
 import javax.sound.midi.MidiSystem;
 import java.io.File;
+import java.io.FileFilter;
 import java.io.IOException;
 
 public class Main {
 
-    static double WANTED_AVERAGE_FITNESS = 7.0;
+    static double WANTED_AVERAGE_FITNESS = 7.5;
 
     public static void main(String[] args) throws InvalidMidiDataException, IOException {
-        String file = "src/testFiles/input1.mid";
-        displayMidiFile(file);
-        Pattern chords = generateAccompaniment(file);
-        System.out.println(chords);
-        displayMidiFile(file, chords);
+        for (int i = 0; i < 5; i ++) {
+            String file = "src/testFiles/input3.mid";
+            displayMidiFile(file);
+            Pattern chords = generateAccompaniment(file);
+            System.out.println(chords);
+            displayMidiFile(file, chords, i);
+        }
 
 //        Pattern mainChords = new Pattern("T180 V0 D4Min9hqit Ri G3Maj13hqi Ri C4Maj9wh Rh");
 //        mainChords.add("D4Minhqit Ri G4Majhqi Ri C4Majwh Rht");
@@ -65,7 +68,6 @@ public class Main {
         for (ChordObject chord : evolution.initialGeneration) {
             accompaniment.add(chord.actualChord);
         }
-
         return accompaniment;
     }
 
@@ -80,7 +82,7 @@ public class Main {
         new Player().play(loadedFile);
     }
 
-    public static void displayMidiFile(String filePath, Pattern accompaniment) {
+    public static void displayMidiFile(String filePath, Pattern accompaniment, int i) {
         Pattern loadedFile = new Pattern();
         try {
             loadedFile = MidiFileManager.loadPatternFromMidi(new File(filePath));
@@ -88,6 +90,16 @@ public class Main {
             e.printStackTrace();
         }
         System.out.println(loadedFile);
+
+        try {
+            File file = new File(filePath.substring(0, filePath.length() - 3)
+                    + "+chords" + i + ".mid");
+            MidiFileManager.savePatternToMidi(loadedFile, file);
+            MidiFileManager.savePatternToMidi(accompaniment, file);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
         new Player().play(loadedFile, accompaniment);
     }
 
