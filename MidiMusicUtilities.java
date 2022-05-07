@@ -313,24 +313,23 @@ class ChordsGenerator {
     public List<ChordObject> generateRandomChords(Intervals keyScale) {
         List<List<Note>> notesPerChord = generateNotesPerChord();
         List<ChordObject> chords = new ArrayList<>();
-
+        int count = 0;
         // add the first chord explicitly as it does not have a previousNotes attributes
         chords.add(new ChordObject
-                (keyScale, null, notesPerChord.get(0), notesPerChord.get(1), timePerChord));
+                (keyScale, null, notesPerChord.get(0), notesPerChord.get(1), timePerChord, ++count));
         int i;
 
         for (i = 1; i < notesPerChord.size() - 1 ; i++) {
             chords.add(new ChordObject(keyScale,
-                            notesPerChord.get(i - 1), notesPerChord.get(i), notesPerChord.get(i + 1), timePerChord));
+                            notesPerChord.get(i - 1), notesPerChord.get(i), notesPerChord.get(i + 1),
+                    timePerChord, ++count));
         }
         // i at this point is equal to notesPerChord.size() - 1
         // add the last chord explicitly as it does not have a nextNotes attribute
         chords.add(
-                new ChordObject(keyScale, notesPerChord.get(i - 1), notesPerChord.get(i), null, timePerChord));
+                new ChordObject(
+                        keyScale, notesPerChord.get(i - 1), notesPerChord.get(i), null, timePerChord, ++count));
 
-//        for (List<Note> ln : notesPerChord) {
-//            System.out.println(ln.stream().mapToDouble(Note::getDuration).sum());
-//        }
         return chords;
     }
 }

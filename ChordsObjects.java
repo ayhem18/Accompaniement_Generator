@@ -19,20 +19,28 @@ class ChordObject {
     Chord actualChord;
 
     double fitnessValue;
+
+    int chordOrder;
+
+    public int getChordOrder() {
+        return chordOrder;
+    }
+
     public ChordObject(Intervals keyScale, List<Note> notesPrevious, List<Note> notesCurrent, List<Note> notesNext,
-                       double chordDuration, Chord actualChord) {
+                       double chordDuration, Chord actualChord, int chordOrder) {
         this.keyScale = keyScale;
         this.notesPrevious = notesPrevious;
         this.notesCurrent = notesCurrent;
         this.notesNext = notesNext;
         this.chordDuration = chordDuration ;
         this.actualChord = actualChord;
+        this.chordOrder = chordOrder;
     }
 
     public ChordObject(Intervals keyScale, List<Note> notesPrevious, List<Note> notesCurrent, List<Note> notesNext,
-                       double chordDuration) {
+                       double chordDuration, int chordOrder) {
         this(keyScale, notesPrevious, notesCurrent, notesNext, chordDuration,
-                MusicUtilities.getRandomChordWithDuration(chordDuration));
+                MusicUtilities.getRandomChordWithDuration(chordDuration), chordOrder);
     }
     private List<Note> chordNotes() {
         return Arrays.stream(actualChord.getNotes()).map(MusicUtilities::commonNoteVersion).toList();
@@ -131,7 +139,7 @@ class ChordsReproduction {
                         chords[random.nextInt(2)].actualChord.getInversion());
         ChordObject worseChord = chord1.fitnessValue > chord2.fitnessValue ? chord2 : chord1;
         return new ChordObject(worseChord.keyScale, worseChord.notesPrevious, worseChord.notesCurrent, worseChord.notesNext,
-                worseChord.chordDuration, newChord);
+                worseChord.chordDuration, newChord, worseChord.chordOrder);
     }
 
     static Chord crossOver(Chord chord1, Chord chord2, double duration) {
@@ -252,6 +260,7 @@ class Evolution {
             // evaluate the total performance
             totalFitness = evaluateTotalFitness();
         }
+        initialGeneration.sort((chord1, chord2) -> (int) Math.signum(chord1.chordOrder - chord2.chordOrder));
     }
 }
 

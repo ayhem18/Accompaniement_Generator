@@ -13,7 +13,7 @@ public class Main {
     static double WANTED_AVERAGE_FITNESS = 7.0;
 
     public static void main(String[] args) throws InvalidMidiDataException, IOException {
-        String file = "src/testFiles/input1.mid";
+        String file = "src/testFiles/input2.mid";
         displayMidiFile(file);
         Pattern chords = generateAccompaniment(file);
         System.out.println(chords);
