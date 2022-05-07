@@ -248,14 +248,20 @@ class MeasuresParserListener extends ParserListenerAdapter {
 
     @Override
     public void onNoteParsed(Note note) {
+
         if (measures.isEmpty() || currentTime >= timePerMeasure) {
             measures.add(new ArrayList<>());
             currentTime = 0;
         }
         double noteDuration = MusicUtilities.fitDuration(note.getDuration());
         currentTime += noteDuration;
-        measures.get(measures.size() - 1).add(
-                new Note(MusicUtilities.C_RIGHT_HAND_VALUE + note.getPositionInOctave(), noteDuration));
+        if (note.isRest()) {
+            measures.get(measures.size() - 1).add(Note.REST.setDuration(note.getDuration()));
+        }
+        else {
+            measures.get(measures.size() - 1).add(
+                    new Note(MusicUtilities.C_RIGHT_HAND_VALUE + note.getPositionInOctave(), noteDuration));
+        }
     }
 
 }
@@ -291,22 +297,27 @@ class ChordsGenerator {
             if (currentTime == 0) {
                 notesPerChord.add(new ArrayList<>());
             }
+
             double noteDuration = MusicUtilities.fitDuration(n.getDuration());
+            // in case the noteDuration is larger than the duration allocated for two or more chord units
+            double actualNoteDuration = noteDuration;
+            while (actualNoteDuration > 0) {
+                noteDuration = Math.min(noteDuration, timePerChord);
 
-            notesPerChord.get(notesPerChord.size() - 1).add(
-                    new Note(n).setDuration(Math.min(timePerChord - currentTime, noteDuration)));
-
-
-            currentTime += noteDuration;
-
-            if (currentTime > timePerChord) {
-                currentTime -= timePerChord;
-                notesPerChord.add(new ArrayList<>());
                 notesPerChord.get(notesPerChord.size() - 1).add(
-                        new Note(n).setDuration(currentTime));
-            }
-            else if (currentTime == timePerChord){
-                currentTime = 0;
+                        new Note(n).setDuration(Math.min(timePerChord - currentTime, noteDuration)));
+
+                currentTime += noteDuration;
+
+                if (currentTime > timePerChord) {
+                    currentTime -= timePerChord;
+                    notesPerChord.add(new ArrayList<>());
+                    notesPerChord.get(notesPerChord.size() - 1).add(
+                            new Note(n).setDuration(currentTime));
+                } else if (currentTime == timePerChord) {
+                    currentTime = 0;
+                }
+                actualNoteDuration -= timePerChord;
             }
         }
         return notesPerChord;

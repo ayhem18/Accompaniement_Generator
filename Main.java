@@ -16,7 +16,7 @@ public class Main {
     public static void main(String[] args) throws InvalidMidiDataException, IOException {
         for (int i = 0; i < 5; i ++) {
             String file = "src/testFiles/input3.mid";
-            displayMidiFile(file);
+            // displayMidiFile(file);
             Pattern chords = generateAccompaniment(file);
             System.out.println(chords);
             displayMidiFile(file, chords, i);
