@@ -55,14 +55,14 @@ public class Main {
         parser.parse(MidiSystem.getSequence(
                 new File(filePath)));
 
-        ChordsGenerator generator = new ChordsGenerator(keyListener.getKey(), measuresListener.measures,
+        ChordsGenerator generator = new ChordsGenerator(keyListener.getKeyScale(), measuresListener.measures,
                 measuresListener.timePerMeasure);
 
-        List<ChordObject> randomChords = generator.generateRandomChords(keyListener.getKey());
+        List<ChordObject> randomChords = generator.generateRandomChords(keyListener.getKeyScale());
         randomChords.removeIf(ChordObject::isRestChord);
         List<ChordObject> restChords = new ArrayList<>(randomChords.stream().filter(ChordObject::isRestChord).toList());
 
-        Evolution evolution = new Evolution(generator.generateRandomChords(keyListener.getKey()), WANTED_AVERAGE_FITNESS);
+        Evolution evolution = new Evolution(generator.generateRandomChords(keyListener.getKeyScale()), WANTED_AVERAGE_FITNESS);
         evolution.simulateEvolution();
 
         restChords.addAll(evolution.initialGeneration);
@@ -151,7 +151,7 @@ public class Main {
         parser.parse(MidiSystem.getSequence(
                 new File("src/testFiles/you are only lonely L.mid")));
 
-        ChordsGenerator generator = new ChordsGenerator(keyListener.getKey(), measuresListener.measures,
+        ChordsGenerator generator = new ChordsGenerator(keyListener.getKeyScale(), measuresListener.measures,
                 measuresListener.timePerMeasure);
 
         generator.generateNotesPerChord().forEach(System.out::println);

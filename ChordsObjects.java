@@ -8,17 +8,19 @@ import java.util.*;
 import java.util.function.Predicate;
 
 class ChordObject {
-    static double POINTS_FOR_KEY_SCALE = 3.0;
-    static double POINTS_FOR_CURRENT_CHORD_UNIT = 5.0;
-    static double POINTS_FOR_DIFFERENT_CHORD_UNIT = 0.5;
-    static double POINTS_FOR_ROOT_NOTE = 1.0;
-    Intervals keyScale;
-    List<Note> notesPrevious;
-    List<Note> notesCurrent;
-    List<Note> notesNext;
-    double chordDuration;
+    static final double POINTS_FOR_KEY_SCALE = 3.0;
+    static final double POINTS_FOR_CURRENT_CHORD_UNIT = 5.0;
+    static final double POINTS_FOR_DIFFERENT_CHORD_UNIT = 0.5;
+    static final double POINTS_FOR_ROOT_NOTE = 1.0;
+
+    static final int STEPS = 5;
+    final Intervals keyScale;
+    final List<Note> notesPrevious;
+    final List<Note> notesCurrent;
+    final List<Note> notesNext;
+    final double chordDuration;
     Chord actualChord;
-    int chordRank;
+    final int chordRank;
     double fitnessValue;
     boolean isRestChord;
     Note rest;
@@ -65,10 +67,10 @@ class ChordObject {
      */
     public double fitnessFunction() {
         fitnessValue = pointsForKeyScale(keyScale, POINTS_FOR_KEY_SCALE) +
-                pointsForChordUnit(notesCurrent, POINTS_FOR_CURRENT_CHORD_UNIT, 5) +
+                pointsForChordUnit(notesCurrent, POINTS_FOR_CURRENT_CHORD_UNIT, STEPS) +
                 pointsForChordUnit(notesNext, POINTS_FOR_DIFFERENT_CHORD_UNIT) +
                 pointsForChordUnit(notesPrevious, POINTS_FOR_DIFFERENT_CHORD_UNIT) +
-                pointsForRootNote(notesCurrent, POINTS_FOR_ROOT_NOTE);
+                pointsForRootNote(notesCurrent);
         fitnessValue = (new BigDecimal(fitnessValue)).setScale(3, RoundingMode.HALF_UP).doubleValue();
         return fitnessValue * 1;
 
@@ -128,12 +130,12 @@ class ChordObject {
         return Math.max( ((count - outliers * chordNotes().size()) * coefficient) / total, 0);
     }
 
-    private double pointsForRootNote(List<Note> chordUnit, double coefficient) {
+    private double pointsForRootNote(List<Note> chordUnit) {
         Note firstNote = MusicUtilities.commonNoteVersion(chordUnit.get(0));
         boolean contains = chordNotes().contains(firstNote);//? 1.0 : 0.0);
         boolean firstEqual = chordNotes().get(0).equals(firstNote);
-        return coefficient * 0.5 * (chordNotes().contains(firstNote)? 1.0 : 0.0) +
-        coefficient * 0.5 * (chordNotes().get(0).equals(firstNote)? 1.0 : 0.0);
+        return POINTS_FOR_ROOT_NOTE * 0.5 * (chordNotes().contains(firstNote)? 1.0 : 0.0) +
+                POINTS_FOR_ROOT_NOTE * 0.5 * (chordNotes().get(0).equals(firstNote)? 1.0 : 0.0);
     }
 }
 

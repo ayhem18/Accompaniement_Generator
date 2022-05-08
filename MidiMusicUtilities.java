@@ -138,7 +138,7 @@ class KeyParserListener extends ParserListenerAdapter {
         notes.add(new Note(MusicUtilities.C_RIGHT_HAND_VALUE + note.getPositionInOctave()));
     }
 
-    public Intervals getKey() {
+    public Intervals getKeyScale() {
 
         int bestFit = 0;
         // taking into consideration that a minimum of 2 scales will have the maximum fit indicator
@@ -357,9 +357,6 @@ class ChordsGenerator {
                 new ChordObject(keyScale, notesPerChord.get(i - 1), notesPerChord.get(i), null,
                         timePerChord, ++count));
 
-//        for (List<Note> ln : notesPerChord) {
-//            System.out.println(ln.stream().mapToDouble(Note::getDuration).sum());
-//        }
         return chords;
     }
 }
