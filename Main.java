@@ -6,22 +6,21 @@ import org.jfugue.player.Player;
 import javax.sound.midi.InvalidMidiDataException;
 import javax.sound.midi.MidiSystem;
 import java.io.File;
-import java.io.FileFilter;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Main {
-
-    static double WANTED_AVERAGE_FITNESS = 7.5;
+    static double WANTED_AVERAGE_FITNESS = 8;
 
     public static void main(String[] args) throws InvalidMidiDataException, IOException {
+        String file = "src/testFiles/input1.mid";
         for (int i = 0; i < 5; i ++) {
-            String file = "src/testFiles/input3.mid";
-            // displayMidiFile(file);
             Pattern chords = generateAccompaniment(file);
             System.out.println(chords);
             displayMidiFile(file, chords, i);
         }
-
+         // displayMidiFile("src/testFiles/input1.+chords4.mid");
 //        Pattern mainChords = new Pattern("T180 V0 D4Min9hqit Ri G3Maj13hqi Ri C4Maj9wh Rh");
 //        mainChords.add("D4Minhqit Ri G4Majhqi Ri C4Majwh Rht");
 //
@@ -59,15 +58,27 @@ public class Main {
         ChordsGenerator generator = new ChordsGenerator(keyListener.getKey(), measuresListener.measures,
                 measuresListener.timePerMeasure);
 
-        Evolution evolution = new Evolution(
-                generator.generateRandomChords(keyListener.getKey()), WANTED_AVERAGE_FITNESS);
+        List<ChordObject> randomChords = generator.generateRandomChords(keyListener.getKey());
+        randomChords.removeIf(ChordObject::isRestChord);
+        List<ChordObject> restChords = new ArrayList<>(randomChords.stream().filter(ChordObject::isRestChord).toList());
 
+        Evolution evolution = new Evolution(generator.generateRandomChords(keyListener.getKey()), WANTED_AVERAGE_FITNESS);
         evolution.simulateEvolution();
 
-        Pattern accompaniment = new Pattern("V1").setInstrument("Steel_String_Guitar");
+        restChords.addAll(evolution.initialGeneration);
+
+        restChords.sort((c1, c2) -> (int) Math.signum(c1.chordRank - c2.chordRank));
+
+        Pattern accompaniment = new Pattern("V1").setInstrument("flute").setVoice(13);
+        System.out.println("ACCOMPANIMENT: " + accompaniment.toString());
         for (ChordObject chord : evolution.initialGeneration) {
-            accompaniment.add(chord.actualChord);
+            if (chord.isRestChord) {
+                accompaniment.add(chord.rest);
+            }
+            else {
+                accompaniment.add(chord.actualChord);}
         }
+        accompaniment.setInstrument(10);
         return accompaniment;
     }
 
@@ -90,17 +101,18 @@ public class Main {
             e.printStackTrace();
         }
         System.out.println(loadedFile);
+        loadedFile.setInstrument(1);
+        loadedFile.add(accompaniment);
 
         try {
             File file = new File(filePath.substring(0, filePath.length() - 3)
                     + "+chords" + i + ".mid");
             MidiFileManager.savePatternToMidi(loadedFile, file);
-            MidiFileManager.savePatternToMidi(accompaniment, file);
         } catch (IOException e) {
             e.printStackTrace();
         }
 
-        new Player().play(loadedFile, accompaniment);
+        new Player().play(loadedFile);
     }
 
     public static void testKeyParser() throws InvalidMidiDataException, IOException {

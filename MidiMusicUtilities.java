@@ -7,12 +7,13 @@ import java.util.List;
 import java.util.Random;
 
 class MusicUtilities {
+    static final byte DEFAULT_VELOCITY = 10;
     static final Intervals MINOR_INTERVAL = new Intervals("1 2 b3 4 5 b6 b7");
     static final Intervals MAJOR_INTERVAL = new Intervals("1 2 3 4 5 6 7");
 
     static final int C_RIGHT_HAND_VALUE = 60;
     static final byte DENOMINATOR_LIMIT = 6;
-    static final int C_LEFT_HAND_VALUE = 48;
+    static final int C_LEFT_HAND_VALUE = 24;
     static final List<Double> VALID_DURATIONS ;
     static int QUARTER_TO_WHOLE = 4;
     static double DEFAULT_DURATION = 0.25;
@@ -45,26 +46,26 @@ class MusicUtilities {
     static final Intervals MAJOR_CHORD = new Intervals("1 3 5");
     static final Intervals MAJOR_7_CHORD = new Intervals("1 3 5 7");
     static final Intervals MINOR_7_CHORD = new Intervals("1 b3 5 b7");
-
-    static final List<Chord> MAJOR_CHORDS = new ArrayList<>();
-    static final List<Chord> MINOR_CHORDS = new ArrayList<>();
-    static final List<Chord> MAJOR_7_CHORDS = new ArrayList<>();
-    static final List<Chord> MINOR_7_CHORDS = new ArrayList<>();
-
-    static final List<Chord> ALL_CHORDS = new ArrayList<>();
-    static {
-        for (int i =  C_LEFT_HAND_VALUE; i < C_LEFT_HAND_VALUE + Note.OCTAVE; i++) {
-            MAJOR_CHORDS.add(new Chord(new Note(i), MAJOR_CHORD));
-            MINOR_CHORDS.add(new Chord(new Note(i), MINOR_CHORD));
-            MAJOR_7_CHORDS.add(new Chord(new Note(i), MAJOR_7_CHORD));
-            MINOR_7_CHORDS.add(new Chord(new Note(i), MINOR_7_CHORD));
-        }
-
-        ALL_CHORDS.addAll(MAJOR_7_CHORDS);
-        ALL_CHORDS.addAll(MINOR_7_CHORDS);
-        ALL_CHORDS.addAll(MAJOR_CHORDS);
-        ALL_CHORDS.addAll(MINOR_CHORDS);
-    }
+//
+//    static final List<Chord> MAJOR_CHORDS = new ArrayList<>();
+//    static final List<Chord> MINOR_CHORDS = new ArrayList<>();
+//    static final List<Chord> MAJOR_7_CHORDS = new ArrayList<>();
+//    static final List<Chord> MINOR_7_CHORDS = new ArrayList<>();
+//
+//    static final List<Chord> ALL_CHORDS = new ArrayList<>();
+//    static {
+//        for (int i =  C_LEFT_HAND_VALUE; i < C_LEFT_HAND_VALUE + Note.OCTAVE; i++) {
+//            MAJOR_CHORDS.add(new Chord(new Note(i), MAJOR_CHORD));
+//            MINOR_CHORDS.add(new Chord(new Note(i), MINOR_CHORD));
+//            MAJOR_7_CHORDS.add(new Chord(new Note(i), MAJOR_7_CHORD));
+//            MINOR_7_CHORDS.add(new Chord(new Note(i), MINOR_7_CHORD));
+//        }
+//
+//        ALL_CHORDS.addAll(MAJOR_7_CHORDS);
+//        ALL_CHORDS.addAll(MINOR_7_CHORDS);
+//        ALL_CHORDS.addAll(MAJOR_CHORDS);
+//        ALL_CHORDS.addAll(MINOR_CHORDS);
+//    }
 
     static Chord getRandomChordWithDuration(double duration) {
         Random generator = new Random();
@@ -72,18 +73,21 @@ class MusicUtilities {
         // if the choice value is equal to 1 then return a minor chord
         if (choice == 1) {
             return new Chord(
-                    new Note(generator.nextInt(Note.OCTAVE) + C_LEFT_HAND_VALUE, duration), MINOR_CHORD)
+                    new Note(generator.nextInt(Note.OCTAVE) + C_LEFT_HAND_VALUE, duration)
+                            .setOnVelocity(DEFAULT_VELOCITY), MINOR_CHORD)
                     .setInversion(generator.nextInt(3));
         }
 
         return new Chord(
-                new Note(generator.nextInt(Note.OCTAVE) + C_LEFT_HAND_VALUE, duration), MAJOR_CHORD)
+                new Note(generator.nextInt(Note.OCTAVE) + C_LEFT_HAND_VALUE, duration)
+                        .setOnVelocity(DEFAULT_VELOCITY), MAJOR_CHORD)
                 .setInversion(generator.nextInt(3));
     }
 
     static Chord getChord(int positionInOctave, Intervals chord, double duration, int inversion) {
-        return new Chord(new Note(C_LEFT_HAND_VALUE + positionInOctave, duration), chord).
-                setInversion(inversion % chord.size());
+        return new Chord(
+                new Note(C_LEFT_HAND_VALUE + positionInOctave, duration)
+                        .setOnVelocity(DEFAULT_VELOCITY), chord).setInversion(inversion % chord.size());
     }
 
     static Chord getChord(int positionInOctave, String chordType, double duration, int inversion) {
@@ -96,6 +100,17 @@ class MusicUtilities {
      */
     static Note commonNoteVersion(Note note) {
         return new Note(C_RIGHT_HAND_VALUE + note.getPositionInOctave(), DEFAULT_DURATION);
+    }
+
+    static boolean isRestChord(List<Note> chord) {
+        int rest = 0, total = 0;
+        for (Note n: chord) {
+            if (n.isRest()) {
+                rest++;
+            }
+            total ++;
+        }
+        return (double) rest / total > 0.5;
     }
 }
 
@@ -224,7 +239,6 @@ class TimeParserListener extends ParserListenerAdapter {
         for (byte d = 1; d <= MusicUtilities.DENOMINATOR_LIMIT; d++) {
             for (byte n = 1; n <= Math.pow(2, d); n++) {
                 if (this.numerator != 0 && this.denominator != 0) break;
-
                 onTimeSignatureParsed(d, n);
             }
         }
@@ -326,20 +340,22 @@ class ChordsGenerator {
     public List<ChordObject> generateRandomChords(Intervals keyScale) {
         List<List<Note>> notesPerChord = generateNotesPerChord();
         List<ChordObject> chords = new ArrayList<>();
-
+        int count = 0;
         // add the first chord explicitly as it does not have a previousNotes attributes
         chords.add(new ChordObject
-                (keyScale, null, notesPerChord.get(0), notesPerChord.get(1), timePerChord));
+                (keyScale, null, notesPerChord.get(0), notesPerChord.get(1), timePerChord, ++count));
         int i;
 
         for (i = 1; i < notesPerChord.size() - 1 ; i++) {
             chords.add(new ChordObject(keyScale,
-                            notesPerChord.get(i - 1), notesPerChord.get(i), notesPerChord.get(i + 1), timePerChord));
+                            notesPerChord.get(i - 1), notesPerChord.get(i), notesPerChord.get(i + 1),
+                    timePerChord, ++count));
         }
         // i at this point is equal to notesPerChord.size() - 1
         // add the last chord explicitly as it does not have a nextNotes attribute
         chords.add(
-                new ChordObject(keyScale, notesPerChord.get(i - 1), notesPerChord.get(i), null, timePerChord));
+                new ChordObject(keyScale, notesPerChord.get(i - 1), notesPerChord.get(i), null,
+                        timePerChord, ++count));
 
 //        for (List<Note> ln : notesPerChord) {
 //            System.out.println(ln.stream().mapToDouble(Note::getDuration).sum());

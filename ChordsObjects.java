@@ -5,11 +5,12 @@ import org.jfugue.theory.Note;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.*;
+import java.util.function.Predicate;
 
 class ChordObject {
     static double POINTS_FOR_KEY_SCALE = 3.0;
-    static double POINTS_FOR_CURRENT_CHORD_UNIT = 3.0;
-    static double POINTS_FOR_DIFFERENT_CHORD_UNIT = 1.5;
+    static double POINTS_FOR_CURRENT_CHORD_UNIT = 5.0;
+    static double POINTS_FOR_DIFFERENT_CHORD_UNIT = 0.5;
     static double POINTS_FOR_ROOT_NOTE = 1.0;
     Intervals keyScale;
     List<Note> notesPrevious;
@@ -17,27 +18,39 @@ class ChordObject {
     List<Note> notesNext;
     double chordDuration;
     Chord actualChord;
-
+    int chordRank;
     double fitnessValue;
+    boolean isRestChord;
+    Note rest;
+
+    public boolean isRestChord() {
+        return isRestChord;
+    }
+
     public ChordObject(Intervals keyScale, List<Note> notesPrevious, List<Note> notesCurrent, List<Note> notesNext,
-                       double chordDuration, Chord actualChord) {
+                       double chordDuration, Chord actualChord, int chordRank) {
         this.keyScale = keyScale;
         this.notesPrevious = notesPrevious;
         this.notesCurrent = notesCurrent;
         this.notesNext = notesNext;
         this.chordDuration = chordDuration ;
         this.actualChord = actualChord;
+        this.chordRank = chordRank;
     }
 
     public ChordObject(Intervals keyScale, List<Note> notesPrevious, List<Note> notesCurrent, List<Note> notesNext,
-                       double chordDuration) {
+                       double chordDuration, int chordRank) {
         this(keyScale, notesPrevious, notesCurrent, notesNext, chordDuration,
-                MusicUtilities.getRandomChordWithDuration(chordDuration));
+                MusicUtilities.getRandomChordWithDuration(chordDuration), chordRank);
+        if (MusicUtilities.isRestChord(notesCurrent)) {
+            isRestChord = true;
+            rest = new Note(Note.REST).setDuration(chordDuration);
+        }
     }
 
     public ChordObject(ChordObject another) {
         this(another.keyScale, another.notesPrevious, another.notesCurrent, another.notesNext, another.chordDuration,
-                another.actualChord);
+                another.actualChord, another.chordRank);
     }
     private List<Note> chordNotes() {
         return Arrays.stream(actualChord.getNotes()).map(MusicUtilities::commonNoteVersion).toList();
@@ -51,35 +64,45 @@ class ChordObject {
      * @return a numerical value reflecting how musically appealing (from a theoretical point of view) the chord is
      */
     public double fitnessFunction() {
-        fitnessValue = Math.round(pointsForKeyScale(keyScale, POINTS_FOR_KEY_SCALE) +
-                pointsForChordUnit(notesCurrent, POINTS_FOR_CURRENT_CHORD_UNIT) +
+        fitnessValue = pointsForKeyScale(keyScale, POINTS_FOR_KEY_SCALE) +
+                pointsForChordUnit(notesCurrent, POINTS_FOR_CURRENT_CHORD_UNIT, 5) +
                 pointsForChordUnit(notesNext, POINTS_FOR_DIFFERENT_CHORD_UNIT) +
                 pointsForChordUnit(notesPrevious, POINTS_FOR_DIFFERENT_CHORD_UNIT) +
-                pointsForRootNote(notesCurrent, POINTS_FOR_ROOT_NOTE));
+                pointsForRootNote(notesCurrent, POINTS_FOR_ROOT_NOTE);
         fitnessValue = (new BigDecimal(fitnessValue)).setScale(3, RoundingMode.HALF_UP).doubleValue();
         return fitnessValue * 1;
 
     }
     private double pointsForKeyScale(Intervals keyScale, double coefficient) {
+        assert !isRestChord;
         List<Note> keyScaleNotes = keyScale.getNotes().stream().map(MusicUtilities::commonNoteVersion).toList();
         int count = 0;
         int total = 0;
         for (Note n : chordNotes()) {
-            total ++;
-            if (keyScaleNotes.contains(n)) count++;
+            if (!n.isRest()) {
+                total ++;
+                if (keyScaleNotes.contains(n)) count++;
+            }
         }
         return  (count * coefficient) / total ;
     }
 
+    private double pointsForChordUnit(List<Note> chordUnit, double coefficient, int steps) {
+        double percentage = pointsForChordUnit(chordUnit, coefficient) / coefficient;
+        double res = (Math.ceil(percentage * steps) / steps) * coefficient;
+        return res;
+    }
+
     private double pointsForChordUnit(List<Note> chordUnit, double coefficient) {
-        if (chordUnit == null) {
+        assert !isRestChord;
+
+        if (chordUnit == null || MusicUtilities.isRestChord(chordUnit)) {
             return 0.5 * coefficient;
         }
-        List<Double> values = chordUnit.stream().mapToDouble(Note::getDuration).boxed().toList();
         double minDuration = chordUnit.stream().mapToDouble(Note::getDuration).min().orElse(0.25);
 
         // List<Note> chordUnitNotes = chordUnit.stream().map(MusicUtilities::commonNoteVersion).toList();
-        List<Note> chordUnitNotes = chordUnit.stream().map((note) -> {
+        List<Note> chordUnitNotes = chordUnit.stream().filter(Predicate.not(Note::isRest)).map((note) -> {
             List<Note> list = new ArrayList<>();
             for (int i = 0; i < note.getDuration() / minDuration; i++) {
                 list.add(MusicUtilities.commonNoteVersion(note));
@@ -89,11 +112,20 @@ class ChordObject {
 
         int count = 0; int total = 0;
         for (Note n: chordUnitNotes) {
-            total ++;
-            if (chordNotes().contains(n))
-                count++;
+            if (!n.isRest()) {
+                total ++;
+                if (chordNotes().contains(n))
+                    count++;
+            }
         }
-        return (count * coefficient) / total;
+        // impose a penalty for every note that neither belongs to the key scale nor the current notes played
+        int outliers = 0;
+        List<Note> keyScaleNotes = keyScale.getNotes().stream().map(MusicUtilities::commonNoteVersion).toList();
+        for (Note n : chordNotes()) {
+            if (! (chordUnitNotes.contains(n) || keyScaleNotes.contains(n))) outliers++;
+        }
+
+        return Math.max( ((count - outliers * chordNotes().size()) * coefficient) / total, 0);
     }
 
     private double pointsForRootNote(List<Note> chordUnit, double coefficient) {
@@ -106,6 +138,7 @@ class ChordObject {
 }
 
 class ChordsReproduction {
+    static double RANDOM_CHOICE_POSSIBILITY = 0.1;
 //    static List<ChordObject> crossOver(ChordObject chord1, ChordObject chord2) {
 //        Chord chordA = MusicUtilities.getChord(
 //                chord1.actualChord.getRoot().getPositionInOctave(),
@@ -131,16 +164,25 @@ class ChordsReproduction {
      * @param chord2 second chord
      * @return a new chord formed randomly out of the two passed chords
      */
-    private static Chord crossOver(Chord chord1, Chord chord2, double duration) {
+    private static Chord crossOver(ChordObject chord1, ChordObject chord2, double duration) {
+
         Random generator = new Random();
         double choice = generator.nextDouble();
         // determine the chord type
+
+        ChordObject better = chord1.fitnessValue > chord2.fitnessValue ? chord1 : chord2;
+        ChordObject worse = chord1.fitnessValue < chord2.fitnessValue ? chord1 : chord2;
+
+        double worseRange =
+                Math.max((1.0 - RANDOM_CHOICE_POSSIBILITY - (better.fitnessValue - worse.fitnessValue) / 10) / 2, 0);
+        double betterRange = 2 * worseRange + (better.fitnessValue - worse.fitnessValue) / 10;
+
         Intervals chordType;
-        if (choice < 0.45) {
-            chordType = chord1.getIntervals();
+        if (choice < worseRange) {
+            chordType = worse.actualChord.getIntervals();
         }
-        else if (choice < 0.9) {
-            chordType = chord2.getIntervals();
+        else if (choice < betterRange) {
+            chordType = better.actualChord.getIntervals();
         }
         else {
             chordType = Arrays.asList(MusicUtilities.MAJOR_CHORD, MusicUtilities.MINOR_7_CHORD,
@@ -150,12 +192,14 @@ class ChordsReproduction {
         int positionInOctave;
         choice = generator.nextDouble();
 
-        if (choice < 0.45) {
-            positionInOctave = chord1.getRoot().getPositionInOctave();
+        if (choice < worseRange) {
+            positionInOctave = worse.actualChord.getRoot().getPositionInOctave();
         }
-        else if (choice < 0.9) {
-            positionInOctave = chord2.getRoot().getPositionInOctave();
+
+        else if (choice < betterRange) {
+            positionInOctave = better.actualChord.getRoot().getPositionInOctave();
         }
+
         else {
             positionInOctave = generator.nextInt(Note.OCTAVE);
         }
@@ -165,10 +209,10 @@ class ChordsReproduction {
         int inversion;
 
         if (choice < 0.45) {
-            inversion = chord1.getInversion();
+            inversion = chord1.actualChord.getInversion();
         }
         else if (choice < 0.9) {
-            inversion = chord2.getInversion();
+            inversion = chord2.actualChord.getInversion();
         }
         else {
             inversion = generator.nextInt(chordType.size());
@@ -180,8 +224,8 @@ class ChordsReproduction {
         List<ChordObject> newPair = new ArrayList<>();
         newPair.add(new ChordObject(chord1));
         newPair.add(new ChordObject(chord2));
-        newPair.get(0).setActualChord(crossOver(chord1.actualChord, chord2.actualChord, chord1.chordDuration));
-        newPair.get(1).setActualChord(crossOver(chord1.actualChord, chord2.actualChord, chord1.chordDuration));
+        newPair.get(0).setActualChord(crossOver(chord1, chord2, chord1.chordDuration));
+        newPair.get(1).setActualChord(crossOver(chord1, chord2, chord1.chordDuration));
         return newPair;
     }
 
@@ -330,6 +374,8 @@ class Evolution {
             // evaluate the total performance
             totalFitness = evaluateTotalFitness();
         }
+        initialGeneration.sort((chord1, chord2) -> (int) Math.signum(chord1.chordRank - chord2.chordRank));
+
     }
 }
 
