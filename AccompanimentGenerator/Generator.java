@@ -1,4 +1,4 @@
-package CompanientGenerator;
+package AccompanimentGenerator;
 
 import Chords.ChordObject;
 import Chords.Evolution;
@@ -15,9 +15,11 @@ import java.io.File;
 import java.io.IOException;
 
 public class Generator {
-    static double WANTED_AVERAGE_FITNESS = 7.0;
+    static double WANTED_AVERAGE_FITNESS = 8.2;
 
     public static Pattern generateAccompaniment(String filePath) throws InvalidMidiDataException, IOException {
+        System.out.println(
+                "The evolution process is taking place!! We are generating fit chords for your piece of music !!");
 
         MidiParser parser = new MidiParser();
         // determine the key scale of the song
