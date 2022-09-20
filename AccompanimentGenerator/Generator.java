@@ -15,7 +15,9 @@ import java.io.File;
 import java.io.IOException;
 
 public class Generator {
-    static double WANTED_AVERAGE_FITNESS = 8.2;
+    // This value has been tuned mainly by experimenting: finding the tradeoff between the computation cost and
+    // quality of chords generated. The quality here is determined subjectively by ear.
+    static final double WANTED_AVERAGE_FITNESS = 8.2;
 
     public static Pattern generateAccompaniment(String filePath) throws InvalidMidiDataException, IOException {
         System.out.println(
